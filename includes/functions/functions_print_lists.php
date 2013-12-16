@@ -199,7 +199,7 @@ function format_indi_table($datalist, $option='') {
 	$html .= '<div class="loading-image">&nbsp;</div>';
 	$html .= '<div class="indi-list">';
 	//-- table header
-	$html .= '<table id="'. $table_id. '"><thead><tr>';
+	$html .= '<table id="'. $table_id. '" class="table table-striped"><thead><tr>';
 	$html .= '<th>'. WT_Gedcom_Tag::getLabel('GIVN'). '</th>';
 	$html .= '<th>'. WT_Gedcom_Tag::getLabel('SURN'). '</th>';
 	$html .= '<th>GIVN</th>';

@@ -421,7 +421,7 @@ function print_note_record($text, $nlevel, $nrec, $textOnly=false) {
 		$cont_lines = '';
 	}
 
-	$data = '<div class="fact_NOTE"><span class="label">';
+	$data = '<div class="fact_NOTE"><span class="label label-info">';
 	if ($cont_lines) {
 		if ($EXPAND_NOTES) {
 			$plusminus='minus';
@@ -492,7 +492,7 @@ function print_fact_notes($factrec, $level, $textOnly=false) {
 					}
 				}
 			} else {
-				$data='<div class="fact_NOTE"><span class="label">'.WT_I18N::translate('Note').'</span>: <span class="field error">'.$nid.'</span></div>';
+				$data='<div class="fact_NOTE"><span class="label label-info">'.WT_I18N::translate('Note').'</span>: <span class="field error">'.$nid.'</span></div>';
 			}
 		}
 		if (!$textOnly) {
@@ -802,7 +802,7 @@ function format_fact_date(WT_Fact $event, WT_GedcomRecord $record, $anchor=false
 	// print gedcom ages
 	foreach (array(WT_Gedcom_Tag::getLabel('AGE')=>$fact_age, WT_Gedcom_Tag::getLabel('HUSB')=>$husb_age, WT_Gedcom_Tag::getLabel('WIFE')=>$wife_age) as $label=>$age) {
 		if ($age!='') {
-			$html.=' <span class="label">'.$label.':</span> <span class="age">'.get_age_at_event($age, false).'</span>';
+			$html.=' <span class="label label-info">'.$label.':</span> <span class="age">'.get_age_at_event($age, false).'</span>';
 		}
 	}
 	return $html;
@@ -843,13 +843,13 @@ function format_fact_place(WT_Fact $event, $anchor=false, $sub_records=false, $l
 			$cts = preg_match('/\d LATI (.*)/', $placerec, $match);
 			if ($cts>0) {
 				$map_lati=$match[1];
-				$html.='<br><span class="label">'.WT_Gedcom_Tag::getLabel('LATI').': </span>'.$map_lati;
+				$html.='<br><span class="label label-info">'.WT_Gedcom_Tag::getLabel('LATI').': </span>'.$map_lati;
 			}
 			$map_long="";
 			$cts = preg_match('/\d LONG (.*)/', $placerec, $match);
 			if ($cts>0) {
 				$map_long=$match[1];
-				$html.=' <span class="label">'.WT_Gedcom_Tag::getLabel('LONG').': </span>'.$map_long;
+				$html.=' <span class="label label-info">'.WT_Gedcom_Tag::getLabel('LONG').': </span>'.$map_long;
 			}
 			if ($map_lati && $map_long && empty($SEARCH_SPIDER)) {
 				$map_lati=trim(strtr($map_lati, "NSEW,�", " - -. ")); // S5,6789 ==> -5.6789

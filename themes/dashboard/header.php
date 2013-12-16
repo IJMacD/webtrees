@@ -45,6 +45,7 @@ global $WT_IMAGES;
 
 		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>bootstrap.min.css" />
 		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>font-awesome.min.css" />
+		<!-- <link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>jquery-ui-1.10.3.custom.min.css" /> -->
 
 		<!-- page specific plugin styles -->
 

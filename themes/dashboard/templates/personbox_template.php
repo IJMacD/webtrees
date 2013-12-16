@@ -32,14 +32,14 @@ if (!defined('WT_WEBTREES')) {
 
 echo '<div id="out-',$boxID,'" ',$outBoxAdd,'>
 	<div class="noprint" id="icons-',$boxID,'" style="',$iconsStyleAdd,'">', $icons, '</div>',
-	'<div class="chart_textbox" style="max-height:', $bheight,'px;">',
+	'<div class="chart_textbox" style="max-height:', ($bheight-8),'px;">',
 	$thumbnail,
 	'<a onclick="event.cancelBubble=true;" href="individual.php?pid=', $pid, '&amp;ged=', rawurlencode($GEDCOM), '">
 		<span id="namedef-',$boxID, '" class="name',$style,' ',$classfacts,'">', $name.$addname,  '</span>
 		<span class="name',$style,'"> ',$genderImage,'</span>
 	</a>
 	<div id="fontdef-',$boxID,'" class="details',$style,'">
-		<div id="inout2-',$boxID,'" style="max-height:', ($bheight*.9),'px;">',$BirthDeath,'</div>
+		<div id="inout2-',$boxID,'">',$BirthDeath,'</div>
 	</div>
 	</div>
 	<div id="inout-',$boxID,'" style="display:none;">

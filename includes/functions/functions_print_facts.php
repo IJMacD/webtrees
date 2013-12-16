@@ -475,7 +475,7 @@ function print_fact_sources($factrec, $level) {
 	$ct = preg_match_all("/$level SOUR (.*)/", $factrec, $match, PREG_SET_ORDER);
 	for ($j=0; $j<$ct; $j++) {
 		if (strpos($match[$j][1], '@')===false) {
-			$data .= '<div class="fact_SOUR"><span class="label">'.WT_I18N::translate('Source').':</span> <span class="field" dir="auto">'.WT_Filter::escapeHtml($match[$j][1]).'</span></div>';
+			$data .= '<div class="fact_SOUR"><span class="label label-info">'.WT_I18N::translate('Source').':</span> <span class="field" dir="auto">'.WT_Filter::escapeHtml($match[$j][1]).'</span></div>';
 		}
 	}
 	// -- find source for each fact
@@ -494,7 +494,7 @@ function print_fact_sources($factrec, $level) {
 				$srec = substr($factrec, $spos1, $spos2-$spos1);
 				$lt = preg_match_all("/$nlevel \w+/", $srec, $matches);
 				$data .= '<div class="fact_SOUR">';
-				$data .= '<span class="label">';
+				$data .= '<span class="label label-info">';
 				$elementID = $sid."-".(int)(microtime()*1000000);
 				if ($EXPAND_SOURCES) {
 					$plusminus='icon-minus';
@@ -574,7 +574,7 @@ function print_media_links($factrec, $level, $pid='') {
 				$ttype = preg_match("/".($nlevel+1)." TYPE (.*)/", $media->getGedcom(), $match);
 				if ($ttype>0) {
 					$mediaType = WT_Gedcom_Tag::getFileFormTypeValue($match[1]);
-					echo '<p class="label">', WT_I18N::translate('Type'), ': </span> <span class="field">', $mediaType, '</p>';
+					echo '<p class="label label-info">', WT_I18N::translate('Type'), ': </span> <span class="field">', $mediaType, '</p>';
 				}
 				echo '</p>';
 				//-- print spouse name for marriage events
@@ -693,7 +693,7 @@ function print_main_sources(WT_Fact $fact, $level) {
 				// 2 RESN tags.  Note, there can be more than one, such as "privacy" and "locked"
 				if (preg_match_all("/\n2 RESN (.+)/", $factrec, $rmatches)) {
 					foreach ($rmatches[1] as $rmatch) {
-						echo '<br><span class="label">', WT_Gedcom_Tag::getLabel('RESN'), ':</span> <span class="field">';
+						echo '<br><span class="label label-info">', WT_Gedcom_Tag::getLabel('RESN'), ':</span> <span class="field">';
 						switch ($rmatch) {
 						case 'none':
 							// Note: "2 RESN none" is not valid gedcom, and the GUI will not let you add it.
@@ -718,9 +718,9 @@ function print_main_sources(WT_Fact $fact, $level) {
 				}
 				$cs = preg_match("/$nlevel EVEN (.*)/", $srec, $cmatch);
 				if ($cs>0) {
-					echo '<br><span class="label">', WT_Gedcom_Tag::getLabel('EVEN'), ' </span><span class="field">', $cmatch[1], '</span>';
+					echo '<br><span class="label label-info">', WT_Gedcom_Tag::getLabel('EVEN'), ' </span><span class="field">', $cmatch[1], '</span>';
 					$cs = preg_match("/".($nlevel+1)." ROLE (.*)/", $srec, $cmatch);
-					if ($cs>0) echo '<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="label">', WT_Gedcom_Tag::getLabel('ROLE'), ' </span><span class="field">', $cmatch[1], '</span>';
+					if ($cs>0) echo '<br>&nbsp;&nbsp;&nbsp;&nbsp;<span class="label label-info">', WT_Gedcom_Tag::getLabel('ROLE'), ' </span><span class="field">', $cmatch[1], '</span>';
 				}
 				echo printSourceStructure(getSourceStructure($srec));
 				echo '<div class="indent">';
@@ -935,7 +935,7 @@ function print_main_notes(WT_Fact $fact, $level) {
 		// 2 RESN tags.  Note, there can be more than one, such as "privacy" and "locked"
 		if (preg_match_all("/\n2 RESN (.+)/", $factrec, $matches)) {
 			foreach ($matches[1] as $match) {
-				echo '<br><span class="label">', WT_Gedcom_Tag::getLabel('RESN'), ':</span> <span class="field">';
+				echo '<br><span class="label label-info">', WT_Gedcom_Tag::getLabel('RESN'), ':</span> <span class="field">';
 				switch ($match) {
 				case 'none':
 					// Note: "2 RESN none" is not valid gedcom, and the GUI will not let you add it.

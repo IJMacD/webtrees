@@ -4472,14 +4472,6 @@ button.btn:active {
     box-shadow: 0 0 0 1px rgba(0,0,0,0.08) inset!important
 }
 
-.label {
-    border-radius: 0;
-    text-shadow: none;
-    font-weight: normal;
-    display: inline-block;
-    background-color: #abbac3!important
-}
-
 .label[class*="col-"][class*="arrow"] {
     min-height: 0
 }
@@ -4844,12 +4836,6 @@ button.btn:active {
 
 .label-grey.arrowed-in-right:after {
     border-color: #a0a0a0
-}
-
-.label {
-    font-size: 12px;
-    line-height: 1.15;
-    height: 20px
 }
 
 .label.arrowed {
@@ -14056,7 +14042,8 @@ img.editable-click:hover {
     font-weight: normal;
     background-color: #f9f9f9;
     border: 1px solid #cdd8e3;
-    padding: 8px 8px 9px 24px
+    padding: 8px 8px 9px 24px;
+    position: relative;
 }
 
 .ui-accordion .ui-accordion-header:hover {
