@@ -40,6 +40,7 @@ class WT_MenuBar {
 					'index.php?ctype=gedcom&amp;ged='.$tree->tree_name_url,
 					'menu-tree-'.$tree->tree_id // Cannot use name - it must be a CSS identifier
 				);
+				$submenu->iconclass = "glyphicon glyphicon-tree-deciduous";
 				$menu->addSubmenu($submenu);
 			}
 		}
@@ -83,6 +84,7 @@ class WT_MenuBar {
 		if (WT_USER_GEDCOM_ADMIN) {
 			//-- admin submenu
 			$submenu = new WT_Menu(WT_I18N::translate('Administration'), 'admin.php', 'menu-admin');
+			$submenu->iconclass = "fa fa-cog";
 			$menu->addSubmenu($submenu);
 		}
 		return $menu;
@@ -454,9 +456,10 @@ class WT_MenuBar {
 			$menu=new WT_Menu(WT_I18N::translate('Theme'), '#', 'menu-theme');
 			foreach (get_theme_names() as $themename=>$themedir) {
 				$submenu=new WT_Menu($themename, get_query_url(array('theme'=>$themedir), '&amp;'), 'menu-theme-'.$themedir);
-				if (WT_THEME_DIR == 'themes/'.$themedir.'/') {$submenu->addClass('','','theme-active');}
+				if (WT_THEME_DIR == 'themes/'.$themedir.'/') {$submenu->addClass('','','fa fa-check');}
 				$menu->addSubMenu($submenu);
 			}
+			$menu->helpermenu = true;
 			return $menu;
 		} else {
 			return null;
@@ -476,6 +479,7 @@ class WT_MenuBar {
 				if (WT_LOCALE == $lang) {$submenu->addClass('','','lang-active');}
 				$menu->addSubMenu($submenu);
 			}
+			$menu->helpermenu = true;
 			if (count($menu->submenus)>1) {
 				return $menu;
 			} else {
@@ -509,6 +513,7 @@ class WT_MenuBar {
 		// Sort $favorites alphabetically?
 
 		$menu=new WT_Menu(WT_I18N::translate('Favorites'), '#', 'menu-favorites');
+			$menu->helpermenu = true;
 
 		foreach ($favorites as $favorite) {
 			switch($favorite['type']) {
@@ -537,6 +542,10 @@ class WT_MenuBar {
 				$menu->addSubMenu($submenu);
 			}
 		}
-		return $menu;
+		if (count($menu->submenus)>1) {
+			return $menu;
+		} else {
+			return null;
+		}
 	}
 }

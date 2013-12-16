@@ -333,6 +333,7 @@ class clippings_WT_Module extends WT_Module implements WT_Module_Menu, WT_Module
 			$submenu = new WT_Menu(WT_I18N::translate('Add to clippings cart'), 'module.php?mod=clippings&amp;mod_action=index&amp;action=add&amp;id='.$controller->record->getXref(), 'menu-clippingsadd');
 			$menu->addSubmenu($submenu);
 		}
+		$menu->iconclass = "glyphicon glyphicon-shopping-cart";
 		return $menu;
 	}
 

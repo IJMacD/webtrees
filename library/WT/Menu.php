@@ -39,6 +39,7 @@ class WT_Menu {
 	var $target = null;
 	var $parentmenu = null;
 	var $submenus;
+	var $helpermenu = false;
 
 	/**
 	* Constructor for the menu class
@@ -104,6 +105,7 @@ class WT_Menu {
 	function getMenuAsList() {
 		$link = '';
 		$class = "";
+		$data = "";
 		$content = '<span class="menu-text">'.$this->label.'</span>';
 		if ($this->link) {
 			if ($this->target !== null) {
@@ -120,12 +122,22 @@ class WT_Menu {
 			if($this->iconclass){
 				$content = '<i class="'.$this->iconclass.' fa-large"></i> '.$content;
 			}
-			$html='<a class="'.$class.'" href="'.$this->link.'"'.$link.'>'.$content.'</a>';
+			if($this->helpermenu){
+				$data = ' data-toggle="dropdown"';
+			}
+			$html='<a class="'.$class.'" href="'.$this->link.'"'.$link.$data.'>'.$content.'</a>';
 		} else {
 			$html=$this->label;
 		}
 		if ($this->submenus) {
-			$html.='<ul class="submenu">';
+			if(!$this->helpermenu){
+				// Main site menu
+				$html.='<ul class="submenu">';
+			}
+			else {
+				// Top bar 'menus'
+				$html.='<ul class="dropdown-navbar dropdown-menu">';
+			}
 			foreach ($this->submenus as $submenu) {
 				if ($submenu) {
 					if ($submenu->submenus) {

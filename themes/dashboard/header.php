@@ -56,8 +56,8 @@ global $WT_IMAGES;
 
 		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>ace.css" />
 		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>dashboard.css" />
-<!-- 		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>style.css" />
- -->
+		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>style.css" />
+
 		<!-- inline styles related to this page -->
 
 		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
@@ -83,7 +83,7 @@ global $WT_IMAGES;
 			</div><!-- /.navbar-header -->
 
 			<div class="navbar-header pull-right" role="navigation">
-				<ul class="nav ace-nav">
+				<ul class="nav ace-nav"><!-- 
 					<li class="grey">
 						<a data-toggle="dropdown" class="dropdown-toggle" href="index.html#">
 							<i class="fa fa-tasks"></i>
@@ -291,44 +291,62 @@ global $WT_IMAGES;
 								</a>
 							</li>
 						</ul>
-					</li>
+					</li> -->
+				<?php echo WT_MenuBar::getFavoritesMenu(); ?>
+				<?php echo WT_MenuBar::getThemeMenu(); ?>
+				<?php echo WT_MenuBar::getLanguageMenu(); ?>
 
+				<?php
+				if (WT_USER_ID) {
+				?>
 					<li class="light-brand-green">
 						<a data-toggle="dropdown" href="index.html#" class="dropdown-toggle">
-							<img class="nav-user-photo" src="img/bugbug_1.gif" alt="Bugbug's Photo">
+							<img class="nav-user-photo" src="//www.gravatar.com/avatar/<?php echo md5(strtolower(getUserEmail(WT_USER_ID))); ?>" alt="Bugbug's Photo">
 							<span class="user-info">
 								<small>Welcome,</small>
-								Bugbug
+								<?php echo getUserFullName(WT_USER_ID); ?>
 							</span>
 
 							<i class="fa fa-caret-down"></i>
 						</a>
 
 						<ul class="user-menu pull-right dropdown-menu dropdown-green dropdown-caret dropdown-close">
+							
 							<li>
-								<a href="index.html#">
-									<i class="fa fa-cog"></i>
-									Settings
+								<a href="index.php?ctype=user">
+									<i class="fa fa-user"></i>
+									My Page
 								</a>
 							</li>
 
 							<li>
-								<a href="index.html#">
-									<i class="fa fa-user"></i>
-									Profile
+								<a href="edituser.php">
+									<i class="fa fa-cog"></i>
+									Settings
 								</a>
 							</li>
 
 							<li class="divider"></li>
 
 							<li>
-								<a href="index.html#">
-									<i class="fa fa-off"></i>
+								<a href="index.php?logout=1">
+									<i class="fa fa-power-off"></i>
 									Logout
 								</a>
 							</li>
 						</ul>
 					</li>
+				<?php
+				} else {
+					echo '<li class="light-brand-green">';
+					echo login_link();
+						// <a href="login.php?url=index.php">
+						// 	<i class="fa fa-power-on"></i>
+						// 	Login
+						// </a>
+					echo '</li>';
+				}
+				?>
 				</ul><!-- /.ace-nav -->
 			</div><!-- /.navbar-header -->
 		</div><!-- /.container -->
@@ -346,11 +364,11 @@ global $WT_IMAGES;
 				<div class="sidebar-shortcuts" id="sidebar-shortcuts">
 					<div class="sidebar-shortcuts-large" id="sidebar-shortcuts-large">
 						<button class="btn btn-success">
-							<i class="fa fa-signal"></i>
+							<i class="glyphicon glyphicon-tree-deciduous"></i>
 						</button>
 
 						<button class="btn btn-info">
-							<i class="fa fa-pencil"></i>
+							<i class="fa fa-user"></i>
 						</button>
 
 						<button class="btn btn-warning">
@@ -393,7 +411,7 @@ global $WT_IMAGES;
 			<div class="main-content">
 
 				<div class="breadcrumbs" id="breadcrumbs">
-
+<!-- 
 					<ul class="breadcrumb">
 						<li>
 							<i class="fa fa-home home-icon"></i>
