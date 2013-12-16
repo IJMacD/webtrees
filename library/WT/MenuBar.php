@@ -31,6 +31,7 @@ if (!defined('WT_WEBTREES')) {
 class WT_MenuBar {
 	public static function getGedcomMenu() {
 		$menu = new WT_Menu(WT_I18N::translate('Home page'), 'index.php?ctype=gedcom&amp;ged='.WT_GEDURL, 'menu-tree');
+		$menu->iconclass = "glyphicon glyphicon-tree-deciduous";
 		$ALLOW_CHANGE_GEDCOM=WT_Site::preference('ALLOW_CHANGE_GEDCOM') && count(WT_Tree::getAll())>1;
 		foreach (WT_Tree::getAll() as $tree) {
 			if ($tree->tree_id==WT_GED_ID || $ALLOW_CHANGE_GEDCOM) {
@@ -57,6 +58,7 @@ class WT_MenuBar {
 
 		//-- main menu
 		$menu = new WT_Menu(WT_I18N::translate('My page'), 'index.php?ctype=user&amp;ged='.WT_GEDURL, 'menu-mymenu');
+		$menu->iconclass = "fa fa-user";
 
 		//-- mypage submenu
 		$submenu = new WT_Menu(WT_I18N::translate('My page'), 'index.php?ctype=user&amp;ged='.WT_GEDURL, 'menu-mypage');
@@ -96,6 +98,7 @@ class WT_MenuBar {
 		$indi_xref=$controller->getSignificantIndividual()->getXref();
 
 		$menu = new WT_Menu(WT_I18N::translate('Charts'), 'pedigree.php?rootid='.$indi_xref.'&amp;ged='.WT_GEDURL, 'menu-chart');
+		$menu->iconclass = "fa fa-bar-chart-o";
 
 		// Build a sortable list of submenu items and then sort it in localized name order
 		$menuList = array(
@@ -282,6 +285,7 @@ class WT_MenuBar {
 
 		// The top level menu shows the individual list
 		$menu=new WT_Menu(WT_I18N::translate('Lists'), 'indilist.php?ged='.WT_GEDURL, 'menu-list');
+		$menu->iconclass = "fa fa-list";
 
 		// Do not show empty lists
 		$row=WT_DB::prepare(
@@ -370,6 +374,7 @@ class WT_MenuBar {
 		}
 		//-- main calendar menu item
 		$menu = new WT_Menu(WT_I18N::translate('Calendar'), 'calendar.php?ged='.WT_GEDURL, 'menu-calendar');
+		$menu->iconclass = "fa fa-calendar";
 		//-- viewday sub menu
 		$submenu = new WT_Menu(WT_I18N::translate('Day'), 'calendar.php?ged='.WT_GEDURL, 'menu-calendar-day');
 		$menu->addSubmenu($submenu);
@@ -395,6 +400,7 @@ class WT_MenuBar {
 		}
 
 		$menu = new WT_Menu(WT_I18N::translate('Reports'), 'reportengine.php?ged='.WT_GEDURL, 'menu-report');
+		$menu->iconclass = "fa fa-file-text-o";
 
 		foreach ($active_reports as $report) {
 			foreach ($report->getReportMenus() as $submenu) {
@@ -412,6 +418,7 @@ class WT_MenuBar {
 		}
 		//-- main search menu item
 		$menu = new WT_Menu(WT_I18N::translate('Search'), 'search.php?ged='.WT_GEDURL, 'menu-search');
+		$menu->iconclass = "fa fa-search";
 		//-- search_general sub menu
 		$submenu = new WT_Menu(WT_I18N::translate('General search'), 'search.php?ged='.WT_GEDURL, 'menu-search-general');
 		$menu->addSubmenu($submenu);

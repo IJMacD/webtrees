@@ -25,8 +25,9 @@ if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
 	exit;
 }
+?>
 
-echo '</div>'; // <div id="content">
+<!-- echo '</div>'; // <div id="content">
 if ($view!='simple') {
 	echo '<div id="footer">';
 	echo contact_links();
@@ -43,4 +44,27 @@ if ($view!='simple') {
 		echo '</a>';
 	}
 	echo '</div>'; // <div id="footer">
-}
+} -->
+
+				</div><!-- /.page-content -->
+			</div><!-- /.main-content -->
+
+		</div><!-- /.main-container-inner -->
+
+		<a href="index.html#" id="btn-scroll-up" class="btn-scroll-up btn btn-sm btn-inverse">
+			<i class="fa fa-angle-double-up fa fa-only bigger-110"></i>
+		</a>
+	</div><!-- /.main-container -->
+
+	<script src="<?php echo WT_JS_URL; ?>jquery-2.0.3.min.js"></script>
+	<script src="<?php echo WT_JS_URL; ?>bootstrap.min.js"></script>
+
+	<script src="<?php echo WT_JS_URL; ?>jquery.slimscroll.min.js"></script>
+	<script src="<?php echo WT_JS_URL; ?>jquery-ui-1.10.3.custom.min.js"></script>
+	<script src="<?php echo WT_JS_URL; ?>jquery.ui.touch-punch.min.js"></script>
+			
+
+	<script src="<?php echo WT_JS_URL; ?>ace.js"></script>
+		
+  </body>
+</html>

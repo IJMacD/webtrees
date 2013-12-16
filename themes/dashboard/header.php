@@ -27,36 +27,413 @@ if (!defined('WT_WEBTREES')) {
 }
 
 global $WT_IMAGES;
-// This theme uses the jQuery “colorbox” plugin to display images
-$this
-	->addExternalJavascript(WT_JQUERY_COLORBOX_URL)
-	->addExternalJavascript(WT_JQUERY_WHEELZOOM_URL)
-	->addInlineJavascript('activate_colorbox();')
-	->addInlineJavascript('jQuery.extend(jQuery.colorbox.settings, { width:"85%", height:"85%", transition:"none", slideshowStart:"'. WT_I18N::translate('Play').'", slideshowStop:"'. WT_I18N::translate('Stop').'", title: function() { var img_title = jQuery(this).data("title"); return img_title; } } );');
 ?>
 <!DOCTYPE html>
 <html <?php echo WT_I18N::html_markup(); ?>>
-<head>
-	<meta charset="UTF-8">
-	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<?php echo header_links($META_DESCRIPTION, $META_ROBOTS, $META_GENERATOR, $LINK_CANONICAL); ?>
-	<title><?php echo WT_Filter::escapeHtml($title); ?></title>
-	<link rel="icon" href="<?php echo WT_CSS_URL; ?>favicon.png" type="image/png">
-	<link rel="stylesheet" type="text/css" href="<?php echo WT_THEME_URL; ?>jquery-ui-1.10.3/jquery-ui-1.10.3.custom.css">
-	<link rel="stylesheet" type="text/css" href="<?php echo WT_CSS_URL; ?>style.css">
-	<!--[if IE]>
-	<link rel="stylesheet" type="text/css" href="<?php echo WT_CSS_URL; ?>msie.css">
-	<![endif]-->
-	<?php if (WT_USE_LIGHTBOX) { ?>
-	<link rel="stylesheet" type="text/css" href="<?php echo WT_STATIC_URL, WT_MODULES_DIR; ?>lightbox/css/album_page.css">
-	<?php } ?>
-</head>
-<body id="body">
+
+	<head>
+		<meta charset="utf-8" />
+		<title><?php echo WT_Filter::escapeHtml($title); ?></title>
+
+		<?php echo header_links($META_DESCRIPTION, $META_ROBOTS, $META_GENERATOR, $LINK_CANONICAL); ?>
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+		<link rel="icon" href="<?php echo WT_THEME_URL; ?>favicon.png" type="image/png">
+
+		<!-- basic styles -->
+
+		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>bootstrap.min.css" />
+		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>font-awesome.min.css" />
+
+		<!-- page specific plugin styles -->
+
+		<!-- fonts -->
+
+		<link rel="stylesheet" href="http://fonts.googleapis.com/css?family=Open+Sans:400,300" />
+
+		<!-- ace styles -->
+
+		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>ace.css" />
+		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>dashboard.css" />
+<!-- 		<link rel="stylesheet" href="<?php echo WT_CSS_URL; ?>style.css" />
+ -->
+		<!-- inline styles related to this page -->
+
+		<!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+
+		<!--[if lt IE 9]>
+		<script src="js/html5shiv.js"></script>
+		<script src="js/respond.min.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+    <!-- HEADER -->
+    <nav class="navbar navbar-default" id="navbar">
+		<div class="navbar-container" id="navbar-container">
+			<div class="navbar-header pull-left">
+				<a href="index.html#" class="navbar-brand">
+					<small>
+						<i class="glyphicon glyphicon-tree-deciduous"></i>
+						<?php echo  WT_TREE_TITLE; ?>
+					</small>
+				</a><!-- /.brand -->
+			</div><!-- /.navbar-header -->
+
+			<div class="navbar-header pull-right" role="navigation">
+				<ul class="nav ace-nav">
+					<li class="grey">
+						<a data-toggle="dropdown" class="dropdown-toggle" href="index.html#">
+							<i class="fa fa-tasks"></i>
+							<span class="badge badge-grey">4</span>
+						</a>
+
+						<ul class="pull-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
+							<li class="dropdown-header">
+								<i class="glyphicon glyphicon-ok"></i>
+								4 Tasks to complete
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<div class="clearfix">
+										<span class="pull-left">Software Update</span>
+										<span class="pull-right">65%</span>
+									</div>
+
+									<div class="progress progress-mini ">
+										<div style="width:65%" class="progress-bar "></div>
+									</div>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<div class="clearfix">
+										<span class="pull-left">Hardware Upgrade</span>
+										<span class="pull-right">35%</span>
+									</div>
+
+									<div class="progress progress-mini ">
+										<div style="width:35%" class="progress-bar progress-bar-danger"></div>
+									</div>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<div class="clearfix">
+										<span class="pull-left">Unit Testing</span>
+										<span class="pull-right">15%</span>
+									</div>
+
+									<div class="progress progress-mini ">
+										<div style="width:15%" class="progress-bar progress-bar-warning"></div>
+									</div>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<div class="clearfix">
+										<span class="pull-left">Bug Fixes</span>
+										<span class="pull-right">90%</span>
+									</div>
+
+									<div class="progress progress-mini progress-striped active">
+										<div style="width:90%" class="progress-bar progress-bar-success"></div>
+									</div>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									See tasks with details
+									<i class="fa fa-arrow-right"></i>
+								</a>
+							</li>
+						</ul>
+					</li>
+
+					<li class="purple">
+						<a data-toggle="dropdown" class="dropdown-toggle" href="index.html#">
+							<i class="fa fa-bell fa-animated-bell"></i>
+							<span class="badge badge-important">8</span>
+						</a>
+
+						<ul class="pull-right dropdown-navbar navbar-pink dropdown-menu dropdown-caret dropdown-close">
+							<li class="dropdown-header">
+								<i class="fa fa-warning"></i>
+								8 Notifications
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<div class="clearfix">
+										<span class="pull-left">
+											<i class="btn btn-xs no-hover btn-pink fa fa-comment"></i>
+											New Comments
+										</span>
+										<span class="pull-right badge badge-info">+12</span>
+									</div>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<i class="btn btn-xs btn-primary fa fa-user"></i>
+									Bob just signed up as an editor ...
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<div class="clearfix">
+										<span class="pull-left">
+											<i class="btn btn-xs no-hover btn-success fa fa-shopping-cart"></i>
+											New Orders
+										</span>
+										<span class="pull-right badge badge-success">+8</span>
+									</div>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<div class="clearfix">
+										<span class="pull-left">
+											<i class="btn btn-xs no-hover btn-info fa fa-twitter"></i>
+											Followers
+										</span>
+										<span class="pull-right badge badge-info">+11</span>
+									</div>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									See all notifications
+									<i class="fa fa-arrow-right"></i>
+								</a>
+							</li>
+						</ul>
+					</li>
+
+					<li class="green">
+						<a data-toggle="dropdown" class="dropdown-toggle" href="index.html#">
+							<i class="fa fa-envelope fa fa-animated-vertical"></i>
+							<span class="badge badge-success">5</span>
+						</a>
+
+						<ul class="pull-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
+							<li class="dropdown-header">
+								<i class="fa fa-envelope-o"></i>
+								5 Messages
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<img src="img/avatar.png" class="msg-photo" alt="Alex&#39;s Avatar">
+									<span class="msg-body">
+										<span class="msg-title">
+											<span class="blue">Alex:</span>
+											Ciao sociis natoque penatibus et auctor ...
+										</span>
+
+										<span class="msg-time">
+											<i class="fa fa-time"></i>
+											<span>a moment ago</span>
+										</span>
+									</span>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<img src="img/avatar3.png" class="msg-photo" alt="Susan&#39;s Avatar">
+									<span class="msg-body">
+										<span class="msg-title">
+											<span class="blue">Susan:</span>
+											Vestibulum id ligula porta felis euismod ...
+										</span>
+
+										<span class="msg-time">
+											<i class="fa fa-time"></i>
+											<span>20 minutes ago</span>
+										</span>
+									</span>
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<img src="img/avatar4.png" class="msg-photo" alt="Bob&#39;s Avatar">
+									<span class="msg-body">
+										<span class="msg-title">
+											<span class="blue">Bob:</span>
+											Nullam quis risus eget urna mollis ornare ...
+										</span>
+
+										<span class="msg-time">
+											<i class="fa fa-time"></i>
+											<span>3:15 pm</span>
+										</span>
+									</span>
+								</a>
+							</li>
+
+							<li>
+								<a href="inbox.html">
+									See all messages
+									<i class="fa fa-arrow-right"></i>
+								</a>
+							</li>
+						</ul>
+					</li>
+
+					<li class="light-brand-green">
+						<a data-toggle="dropdown" href="index.html#" class="dropdown-toggle">
+							<img class="nav-user-photo" src="img/bugbug_1.gif" alt="Bugbug's Photo">
+							<span class="user-info">
+								<small>Welcome,</small>
+								Bugbug
+							</span>
+
+							<i class="fa fa-caret-down"></i>
+						</a>
+
+						<ul class="user-menu pull-right dropdown-menu dropdown-green dropdown-caret dropdown-close">
+							<li>
+								<a href="index.html#">
+									<i class="fa fa-cog"></i>
+									Settings
+								</a>
+							</li>
+
+							<li>
+								<a href="index.html#">
+									<i class="fa fa-user"></i>
+									Profile
+								</a>
+							</li>
+
+							<li class="divider"></li>
+
+							<li>
+								<a href="index.html#">
+									<i class="fa fa-off"></i>
+									Logout
+								</a>
+							</li>
+						</ul>
+					</li>
+				</ul><!-- /.ace-nav -->
+			</div><!-- /.navbar-header -->
+		</div><!-- /.container -->
+    </nav>
+
+	<div class="main-container" id="main-container">
+
+		<div class="main-container-inner">
+			<a class="menu-toggler" id="menu-toggler" href="index.html#">
+				<span class="menu-text"></span>
+			</a>
+
+			<div class="sidebar" id="sidebar">
+
+				<div class="sidebar-shortcuts" id="sidebar-shortcuts">
+					<div class="sidebar-shortcuts-large" id="sidebar-shortcuts-large">
+						<button class="btn btn-success">
+							<i class="fa fa-signal"></i>
+						</button>
+
+						<button class="btn btn-info">
+							<i class="fa fa-pencil"></i>
+						</button>
+
+						<button class="btn btn-warning">
+							<i class="fa fa-group"></i>
+						</button>
+
+						<button class="btn btn-danger">
+							<i class="fa fa-cogs"></i>
+						</button>
+					</div>
+
+					<div class="sidebar-shortcuts-mini" id="sidebar-shortcuts-mini">
+						<span class="btn btn-success"></span>
+
+						<span class="btn btn-info"></span>
+
+						<span class="btn btn-warning"></span>
+
+						<span class="btn btn-danger"></span>
+					</div>
+				</div><!-- #sidebar-shortcuts -->
+
+				<ul class="nav nav-list">
+					<?php echo WT_MenuBar::getGedcomMenu();   ?>
+					<?php echo WT_MenuBar::getMyPageMenu();   ?>
+					<?php echo WT_MenuBar::getChartsMenu();   ?>
+					<?php echo WT_MenuBar::getListsMenu();    ?>
+					<?php echo WT_MenuBar::getCalendarMenu(); ?>
+					<?php echo WT_MenuBar::getReportsMenu();  ?>
+					<?php echo WT_MenuBar::getSearchMenu();   ?>
+					<?php echo implode('', WT_MenuBar::getModuleMenus()); ?>
+				</ul><!-- /.nav-list -->
+
+				<div class="sidebar-collapse" id="sidebar-collapse">
+					<i class="fa fa-angle-double-left" data-icon1="fa fa-angle-double-left" data-icon2="fa fa-angle-double-right"></i>
+				</div>
+
+			</div>
+
+			<div class="main-content">
+
+				<div class="breadcrumbs" id="breadcrumbs">
+
+					<ul class="breadcrumb">
+						<li>
+							<i class="fa fa-home home-icon"></i>
+							<a href="index.html">Home</a>
+						</li>
+						<li class="active">Family</li>
+					</ul><!-- .breadcrumb -->
+
+					<div class="nav-search" id="nav-search">
+						<form class="form-search" action="search.php" method="post">
+							<input type="hidden" name="action" value="general">
+							<input type="hidden" name="ged" value="<?php echo WT_GEDCOM; ?>">
+							<input type="hidden" name="topsearch" value="yes">
+							<span class="input-icon">
+								<input type="search" name="query" placeholder="<?php echo WT_I18N::translate('Search'); ?>" class="nav-search-input" id="nav-search-input" autocomplete="off">
+								<i class="fa fa-search nav-search-icon"></i>
+							</span>
+						</form>
+					</div><!-- #nav-search -->
+				</div>
+
+				<div class="page-content">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+					<!-- 
+
 	<?php if ($view!='simple') { ?>
 	<div id="header">
-		<div class="header_img">
-			<img src="<?php echo WT_CSS_URL; ?>images/webtrees.png" width="242" height="50" alt="<?php echo WT_WEBTREES; ?>">
-		</div>
 		<ul id="extra-menu" class="makeMenu">
 			<li>
 				<?php
@@ -71,32 +448,9 @@ $this
 			<?php echo WT_MenuBar::getThemeMenu(); ?>
 			<?php echo WT_MenuBar::getLanguageMenu(); ?>
 		</ul>
-		<div class="title" dir="auto">
-			<?php echo  WT_TREE_TITLE; ?>
-		</div>
-		<div class="header_search">
-			<form action="search.php" method="post">
-				<input type="hidden" name="action" value="general">
-				<input type="hidden" name="ged" value="<?php echo WT_GEDCOM; ?>">
-				<input type="hidden" name="topsearch" value="yes">
-				<input type="search" name="query" size="25" placeholder="<?php echo WT_I18N::translate('Search'); ?>" dir="auto">
-				<input type="image" class="image" src="<?php echo $WT_IMAGES['search']; ?>" alt="<?php echo WT_I18N::translate('Search'); ?>" title="<?php echo WT_I18N::translate('Search'); ?>">
-			</form>
-		</div>
-		<div id="topMenu">
-			<ul id="main-menu">
-				<?php echo WT_MenuBar::getGedcomMenu();   ?>
-				<?php echo WT_MenuBar::getMyPageMenu();   ?>
-				<?php echo WT_MenuBar::getChartsMenu();   ?>
-				<?php echo WT_MenuBar::getListsMenu();    ?>
-				<?php echo WT_MenuBar::getCalendarMenu(); ?>
-				<?php echo WT_MenuBar::getReportsMenu();  ?>
-				<?php echo WT_MenuBar::getSearchMenu();   ?>
-				<?php echo implode('', WT_MenuBar::getModuleMenus()); ?>
-			</ul>
-		</div>
 	</div>
 	<?php } ?>
 	<?php echo $javascript; ?>
 	<?php echo WT_FlashMessages::getHtmlMessages(); ?>
 	<div id="content">
+ -->

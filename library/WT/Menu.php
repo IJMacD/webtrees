@@ -103,23 +103,29 @@ class WT_Menu {
 	// Get the menu as a simple list - for accessible interfaces, search engines and CSS menus
 	function getMenuAsList() {
 		$link = '';
+		$class = "";
+		$content = '<span class="menu-text">'.$this->label.'</span>';
 		if ($this->link) {
 			if ($this->target !== null) {
 				$link .= ' target="'.$this->target.'"';
+			}
+			if ($this->submenus) {
+				$class .= " dropdown-toggle";
 			}
 			if ($this->link=='#') {
 				if ($this->onclick !== null) {
 					$link .= ' onclick="'.$this->onclick.'"';
 				}
-				$html='<a class="'.$this->iconclass.'" href="'.$this->link.'"'.$link.'>'.$this->label.'</a>';
-			} else {
-				$html='<a class="'.$this->iconclass.'" href="'.$this->link.'"'.$link.'>'.$this->label.'</a>';
 			}
+			if($this->iconclass){
+				$content = '<i class="'.$this->iconclass.' fa-large"></i> '.$content;
+			}
+			$html='<a class="'.$class.'" href="'.$this->link.'"'.$link.'>'.$content.'</a>';
 		} else {
 			$html=$this->label;
 		}
 		if ($this->submenus) {
-			$html.='<ul>';
+			$html.='<ul class="submenu">';
 			foreach ($this->submenus as $submenu) {
 				if ($submenu) {
 					if ($submenu->submenus) {

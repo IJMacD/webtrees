@@ -33,11 +33,24 @@ if (!defined('WT_WEBTREES')) {
 }
 
 ?>
-<div id="<?php echo $id; ?>" class="block" >
-	<div class="blockheader">
-		<?php echo $title; ?>
-	</div>
-	<div class="blockcontent small_inner_block <?php echo $class; ?>">
-		<?php echo $content; ?>
+<div class="col-md-4">
+	<div id="<?php echo $id; ?>" class="widget-box transparent">
+		<div class="widget-header widget-header-flat">
+			<h4 class="lighter">
+				<!-- <i class="fa fa-star orange"></i> -->
+				<?php echo $title; ?>
+			</h4>
+
+			<div class="widget-toolbar">
+				<a href="index.html" data-action="collapse">
+					<i class="fa fa-chevron-up"></i>
+				</a>
+			</div>
+		</div>
+		<div class="widget-body">
+			<div class="widget-main no-padding">
+				<?php echo $content; ?>
+			</div>
+		</div>
 	</div>
 </div>

@@ -32,7 +32,8 @@ if (!defined('WT_WEBTREES')) {
 $theme_name = "dashboard";
 
 // A version number in the path prevents browser-cache problems during upgrade
-define('WT_CSS_URL', WT_THEME_URL . 'css-1.5.1/');
+define('WT_CSS_URL', WT_THEME_URL . 'css/');
+define('WT_JS_URL', WT_THEME_URL . 'js/');
 
 $headerfile = WT_THEME_DIR.'header.php';
 $footerfile = WT_THEME_DIR.'footer.php';
