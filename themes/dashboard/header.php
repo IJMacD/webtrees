@@ -74,7 +74,7 @@ global $WT_IMAGES;
     <nav class="navbar navbar-default" id="navbar">
 		<div class="navbar-container" id="navbar-container">
 			<div class="navbar-header pull-left">
-				<a href="index.html#" class="navbar-brand">
+				<a href="index.php" class="navbar-brand">
 					<small>
 						<i class="glyphicon glyphicon-tree-deciduous"></i>
 						<?php echo  WT_TREE_TITLE; ?>
@@ -83,218 +83,11 @@ global $WT_IMAGES;
 			</div><!-- /.navbar-header -->
 
 			<div class="navbar-header pull-right" role="navigation">
-				<ul class="nav ace-nav"><!-- 
-					<li class="grey">
-						<a data-toggle="dropdown" class="dropdown-toggle" href="index.html#">
-							<i class="fa fa-tasks"></i>
-							<span class="badge badge-grey">4</span>
-						</a>
+				<ul class="nav ace-nav">
 
-						<ul class="pull-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
-							<li class="dropdown-header">
-								<i class="glyphicon glyphicon-ok"></i>
-								4 Tasks to complete
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<div class="clearfix">
-										<span class="pull-left">Software Update</span>
-										<span class="pull-right">65%</span>
-									</div>
-
-									<div class="progress progress-mini ">
-										<div style="width:65%" class="progress-bar "></div>
-									</div>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<div class="clearfix">
-										<span class="pull-left">Hardware Upgrade</span>
-										<span class="pull-right">35%</span>
-									</div>
-
-									<div class="progress progress-mini ">
-										<div style="width:35%" class="progress-bar progress-bar-danger"></div>
-									</div>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<div class="clearfix">
-										<span class="pull-left">Unit Testing</span>
-										<span class="pull-right">15%</span>
-									</div>
-
-									<div class="progress progress-mini ">
-										<div style="width:15%" class="progress-bar progress-bar-warning"></div>
-									</div>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<div class="clearfix">
-										<span class="pull-left">Bug Fixes</span>
-										<span class="pull-right">90%</span>
-									</div>
-
-									<div class="progress progress-mini progress-striped active">
-										<div style="width:90%" class="progress-bar progress-bar-success"></div>
-									</div>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									See tasks with details
-									<i class="fa fa-arrow-right"></i>
-								</a>
-							</li>
-						</ul>
-					</li>
-
-					<li class="purple">
-						<a data-toggle="dropdown" class="dropdown-toggle" href="index.html#">
-							<i class="fa fa-bell fa-animated-bell"></i>
-							<span class="badge badge-important">8</span>
-						</a>
-
-						<ul class="pull-right dropdown-navbar navbar-pink dropdown-menu dropdown-caret dropdown-close">
-							<li class="dropdown-header">
-								<i class="fa fa-warning"></i>
-								8 Notifications
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<div class="clearfix">
-										<span class="pull-left">
-											<i class="btn btn-xs no-hover btn-pink fa fa-comment"></i>
-											New Comments
-										</span>
-										<span class="pull-right badge badge-info">+12</span>
-									</div>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<i class="btn btn-xs btn-primary fa fa-user"></i>
-									Bob just signed up as an editor ...
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<div class="clearfix">
-										<span class="pull-left">
-											<i class="btn btn-xs no-hover btn-success fa fa-shopping-cart"></i>
-											New Orders
-										</span>
-										<span class="pull-right badge badge-success">+8</span>
-									</div>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<div class="clearfix">
-										<span class="pull-left">
-											<i class="btn btn-xs no-hover btn-info fa fa-twitter"></i>
-											Followers
-										</span>
-										<span class="pull-right badge badge-info">+11</span>
-									</div>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									See all notifications
-									<i class="fa fa-arrow-right"></i>
-								</a>
-							</li>
-						</ul>
-					</li>
-
-					<li class="green">
-						<a data-toggle="dropdown" class="dropdown-toggle" href="index.html#">
-							<i class="fa fa-envelope fa fa-animated-vertical"></i>
-							<span class="badge badge-success">5</span>
-						</a>
-
-						<ul class="pull-right dropdown-navbar dropdown-menu dropdown-caret dropdown-close">
-							<li class="dropdown-header">
-								<i class="fa fa-envelope-o"></i>
-								5 Messages
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<img src="img/avatar.png" class="msg-photo" alt="Alex&#39;s Avatar">
-									<span class="msg-body">
-										<span class="msg-title">
-											<span class="blue">Alex:</span>
-											Ciao sociis natoque penatibus et auctor ...
-										</span>
-
-										<span class="msg-time">
-											<i class="fa fa-time"></i>
-											<span>a moment ago</span>
-										</span>
-									</span>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<img src="img/avatar3.png" class="msg-photo" alt="Susan&#39;s Avatar">
-									<span class="msg-body">
-										<span class="msg-title">
-											<span class="blue">Susan:</span>
-											Vestibulum id ligula porta felis euismod ...
-										</span>
-
-										<span class="msg-time">
-											<i class="fa fa-time"></i>
-											<span>20 minutes ago</span>
-										</span>
-									</span>
-								</a>
-							</li>
-
-							<li>
-								<a href="index.html#">
-									<img src="img/avatar4.png" class="msg-photo" alt="Bob&#39;s Avatar">
-									<span class="msg-body">
-										<span class="msg-title">
-											<span class="blue">Bob:</span>
-											Nullam quis risus eget urna mollis ornare ...
-										</span>
-
-										<span class="msg-time">
-											<i class="fa fa-time"></i>
-											<span>3:15 pm</span>
-										</span>
-									</span>
-								</a>
-							</li>
-
-							<li>
-								<a href="inbox.html">
-									See all messages
-									<i class="fa fa-arrow-right"></i>
-								</a>
-							</li>
-						</ul>
-					</li> -->
-				<?php echo WT_MenuBar::getFavoritesMenu(); ?>
-				<?php echo WT_MenuBar::getThemeMenu(); ?>
-				<?php echo WT_MenuBar::getLanguageMenu(); ?>
+					<?php echo WT_MenuBar::getFavoritesMenu(); ?>
+					<?php echo WT_MenuBar::getThemeMenu(); ?>
+					<?php echo WT_MenuBar::getLanguageMenu(); ?>
 
 				<?php
 				if (WT_USER_ID) {
@@ -363,21 +156,21 @@ global $WT_IMAGES;
 
 				<div class="sidebar-shortcuts" id="sidebar-shortcuts">
 					<div class="sidebar-shortcuts-large" id="sidebar-shortcuts-large">
-						<button class="btn btn-success">
+						<a class="btn btn-success" href="index.php?ctype=gedcom">
 							<i class="glyphicon glyphicon-tree-deciduous"></i>
-						</button>
+						</a>
 
-						<button class="btn btn-info">
+						<a class="btn btn-info" href="index.php?ctype=user">
 							<i class="fa fa-user"></i>
-						</button>
+						</a>
 
-						<button class="btn btn-warning">
+						<a class="btn btn-warning" href="pedigree.php">
 							<i class="fa fa-group"></i>
-						</button>
+						</a>
 
-						<button class="btn btn-danger">
+						<a class="btn btn-danger" href="edituser.php">
 							<i class="fa fa-cogs"></i>
-						</button>
+						</a>
 					</div>
 
 					<div class="sidebar-shortcuts-mini" id="sidebar-shortcuts-mini">
@@ -435,40 +228,4 @@ global $WT_IMAGES;
 
 				<div class="page-content">
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-					<!-- 
-
-	<?php if ($view!='simple') { ?>
-	<div id="header">
-		<ul id="extra-menu" class="makeMenu">
-			<li>
-				<?php
-				if (WT_USER_ID) {
-					echo '<a href="edituser.php">', WT_I18N::translate('Logged in as '), ' ', getUserFullName(WT_USER_ID), '</a></li> <li>', logout_link();
-				} else {
-					echo login_link();
-				}
-				?>
-			</li>
-			<?php echo WT_MenuBar::getFavoritesMenu(); ?>
-			<?php echo WT_MenuBar::getThemeMenu(); ?>
-			<?php echo WT_MenuBar::getLanguageMenu(); ?>
-		</ul>
-	</div>
-	<?php } ?>
-	<?php echo $javascript; ?>
-	<?php echo WT_FlashMessages::getHtmlMessages(); ?>
-	<div id="content">
- -->
+					<?php echo WT_FlashMessages::getHtmlMessages(); ?>
