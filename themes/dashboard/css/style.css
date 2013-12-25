@@ -35,7 +35,7 @@ html[dir=rtl] .itr:hover .popup {left:0;right:auto;}
 .person_box_template img,
 .person_box_template a.gallery {
 	float:     left;
-	height:    50px;
+	height:    42px;
 	margin:    0 4px 0 0;
 	max-width: 80px;
 	width:     auto;
@@ -536,4 +536,8 @@ html[dir=rtl] #sb_content_extra_info .editfacts {float:left;}
 
 #login-box {
 	margin-top: 30px;
+}
+
+.widget-body {
+	overflow: auto;
 }
