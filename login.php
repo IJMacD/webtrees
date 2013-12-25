@@ -152,30 +152,40 @@ default:
 	}
 
 	echo '</div>';
-	echo '<div id="login-box">
-		<form id="login-form" name="login-form" method="post" action="', WT_LOGIN_URL, '" onsubmit="d=new Date(); this.timediff.value=d.getTimezoneOffset()*60;">
+	echo '<div id="login-box" class="col-sm-offset-3 col-sm-6">
+		<form id="login-form" name="login-form" class="form-horizontal" method="post" action="', WT_LOGIN_URL, '" onsubmit="d=new Date(); this.timediff.value=d.getTimezoneOffset()*60;">
 		<input type="hidden" name="action" value="login">
 		<input type="hidden" name="url" value="', WT_Filter::escapeHtml($url), '">
 		<input type="hidden" name="timediff" value="0">';
 		if (!empty($message)) echo '<span class="error"><br><b>', $message, '</b><br><br></span>';
-		echo '<div>
-			<label for="username">', WT_I18N::translate('Username'),
-			'<input type="text" id="username" name="username" value="', WT_Filter::escapeHtml($username), '" class="formField" autofocus>
-			</label>
+		echo '<div class="form-group">
+			<label for="username" class="col-sm-2 control-label">', WT_I18N::translate('Username'),'</label>',
+    		'<div class="col-sm-10">
+				<input type="text" id="username" name="username" value="', WT_Filter::escapeHtml($username), '" class="form-control" autofocus>
+			</div>
 		</div>
-		<div>
-			<label for="password">', WT_I18N::translate('Password'),
-				'<input type="password" id="password" name="password" class="formField">
-			</label>
+		<div class="form-group">
+			<label for="password" class="col-sm-2 control-label">', WT_I18N::translate('Password'),'</label>',
+			'<div class="col-sm-10">
+				<input type="password" id="password" name="password" class="form-control">
+			</div>
 		</div>
-		<div>
-			<input type="submit" value="', WT_I18N::translate('Login'), '">
+		<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">
+				<input type="submit" value="', WT_I18N::translate('Login'), '">
+			</div>
 		</div>
-		<div>
-			<a href="#" id="passwd_click">', WT_I18N::translate('Request new password'), '</a>
+		<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">
+				<a href="#" id="passwd_click">', WT_I18N::translate('Request new password'), '</a>
+			</div>
 		</div>';
 		if (WT_Site::preference('USE_REGISTRATION_MODULE')) {
-			echo '<div><a href="'.WT_LOGIN_URL.'?action=register">', WT_I18N::translate('Request new user account'), '</a></div>';
+			echo '<div class="form-group">
+			<div class="col-sm-offset-2 col-sm-10">
+				<a href="'.WT_LOGIN_URL.'?action=register">', WT_I18N::translate('Request new user account'), '</a>
+			</div>
+		</div>';
 		}
 	echo '</form>';
 

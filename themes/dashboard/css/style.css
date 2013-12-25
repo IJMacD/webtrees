@@ -533,3 +533,7 @@ html[dir=rtl] #sb_content_extra_info .editfacts {float:left;}
 .block_btn {
 	margin: 2px;
 }
+
+#login-box {
+	margin-top: 30px;
+}
