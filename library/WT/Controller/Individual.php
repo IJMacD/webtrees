@@ -397,6 +397,6 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 				});
 			');
 
-		return '<div id="sidebar"><div id="sidebarAccordion">'.$html.'</div></div>';
+		return '<div id="wt_sidebar"><div id="sidebarAccordion">'.$html.'</div></div>';
 	}
 }
