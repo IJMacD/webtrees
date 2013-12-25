@@ -529,3 +529,7 @@ html[dir=rtl] .desc_tree_div ul {margin-right:10px;margin-left:0;}
 #sb_content_extra_info #hitcounter {border-top:1px solid #b2c7d7;font-weight:bold;padding-top:5px;}
 
 html[dir=rtl] #sb_content_extra_info .editfacts {float:left;}
+
+.block_btn {
+	margin: 2px;
+}
