@@ -1,6 +1,17 @@
 .navbar {
     background: #0FAD6D;
 }
+.ace-nav>li>a{
+	background-color: #29825E;
+}
+.ace-nav>li>a:hover,
+.ace-nav>li>a:focus {
+    background-color: #057045;
+}
+
+.ace-nav>li.open>a {
+    background-color: #057045 !important;
+}
 .logo-ilearner::before {
 	background-image: url(../img/logo.20px.png);
 	background-position: 50%;

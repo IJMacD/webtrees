@@ -136,7 +136,7 @@ class WT_Menu {
 			}
 			else {
 				// Top bar 'menus'
-				$html.='<ul class="dropdown-navbar dropdown-menu">';
+				$html.='<ul class="dropdown-navbar dropdown-menu pull-right">';
 			}
 			foreach ($this->submenus as $submenu) {
 				if ($submenu) {
