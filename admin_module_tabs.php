@@ -2,7 +2,7 @@
 // Module Administration User Interface.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,22 +16,24 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'admin_module_tabs.php');
 require 'includes/session.php';
 require WT_ROOT.'includes/functions/functions_edit.php';
 
-$controller=new WT_Controller_Page();
+$controller = new WT_Controller_Page();
 $controller
-	->requireAdminLogin()
-	->setPageTitle(WT_I18N::translate('Module administration'))
+	->restrictAccess(Auth::isAdmin())
+	->setPageTitle(WT_I18N::translate('Module administration') . ' — ' . WT_I18N::translate('Tabs'))
 	->pageHeader()
 	->addInlineJavascript('
-    jQuery("#tabs_table").sortable({items: ".sortme", forceHelperSize: true, forcePlaceholderSize: true, opacity: 0.7, cursor: "move", axis: "y"});
+	jQuery("#tabs_table").sortable({items: ".sortme", forceHelperSize: true, forcePlaceholderSize: true, opacity: 0.7, cursor: "move", axis: "y"});
 
-    //-- update the order numbers after drag-n-drop sorting is complete
-    jQuery("#tabs_table").bind("sortupdate", function(event, ui) {
+	//-- update the order numbers after drag-n-drop sorting is complete
+	jQuery("#tabs_table").bind("sortupdate", function(event, ui) {
 			jQuery("#"+jQuery(this).attr("id")+" input").each(
 				function (index, value) {
 					value.value = index+1;
@@ -58,12 +60,14 @@ if ($action=='update_mods' && WT_Filter::checkCsrf()) {
 		)->execute(array($order, $module_name));
 		$module->order=$order; // Make the new order take effect immediately
 	}
-	uasort($modules, function($x,$y) { return $x->order - $y->order; });
+	uasort($modules, function(WT_Module $x, WT_Module $y) { return $x->order - $y->order; });
 }
 
 ?>
+<h2><?php echo $controller->getPageTitle(); ?></h2>
+
 <div id="tabs" align="center">
-	<form method="post" action="<?php echo WT_SCRIPT_NAME; ?>">
+	<form method="post">
 		<input type="hidden" name="action" value="update_mods">
 		<?php echo WT_Filter::getCsrf(); ?>
 		<table id="tabs_table" class="modules_table">

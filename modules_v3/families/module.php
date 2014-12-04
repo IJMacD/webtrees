@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,25 +19,20 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 class families_WT_Module extends WT_Module implements WT_Module_Sidebar {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		return /* I18N: Name of a module/sidebar */ WT_I18N::translate('Family list');
 	}
 
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		return /* I18N: Description of the “Families” module */ WT_I18N::translate('A sidebar showing an alphabetic list of all the families in the family tree.');
 	}
 
-	// Implement WT_Module
+	/** {@inheritdoc} */
 	public function modAction($modAction) {
 		switch ($modAction) {
 		case 'ajax':
@@ -52,19 +47,19 @@ class families_WT_Module extends WT_Module implements WT_Module_Sidebar {
 		exit;
 	}
 
-	// Implement WT_Module_Sidebar
+	/** {@inheritdoc} */
 	public function defaultSidebarOrder() {
 		return 50;
 	}
 
-	// Implement WT_Module_Sidebar
+	/** {@inheritdoc} */
 	public function hasSidebarContent() {
 		global $SEARCH_SPIDER;
 
 		return !$SEARCH_SPIDER;
 	}
 
-	// Implement WT_Module_Sidebar
+	/** {@inheritdoc} */
 	public function getSidebarAjaxContent() {
 		$alpha   = WT_Filter::get('alpha'); // All surnames beginning with this letter where "@"=unknown and ","=none
 		$surname = WT_Filter::get('surname'); // All indis with this surname.
@@ -81,12 +76,12 @@ class families_WT_Module extends WT_Module implements WT_Module_Sidebar {
 		}
 	}
 
-	// Implement WT_Module_Sidebar
+	/** {@inheritdoc} */
 	public function getSidebarContent() {
 		global $WT_IMAGES, $UNKNOWN_NN, $controller;
 
 		// Fetch a list of the initial letters of all surnames in the database
-		$initials=WT_Query_Name::surnameAlpha(true, false, WT_GED_ID);
+		$initials = WT_Query_Name::surnameAlpha(true, false, WT_GED_ID, false);
 
 		$controller->addInlineJavascript('
 			var famloadedNames = new Array();
@@ -94,7 +89,7 @@ class families_WT_Module extends WT_Module implements WT_Module_Sidebar {
 			function fsearchQ() {
 				var query = jQuery("#sb_fam_name").val();
 				if (query.length>1) {
-					jQuery("#sb_fam_content").load("module.php?mod='.$this->getName().'&mod_action=ajax&sb_action=families&search="+query);
+					jQuery("#sb_fam_content").load("module.php?mod=' . $this->getName() . '&mod_action=ajax&sb_action=families&search="+query);
 				}
 			}
 
@@ -166,10 +161,10 @@ class families_WT_Module extends WT_Module implements WT_Module_Sidebar {
 	}
 
 	public function getAlphaSurnames($alpha, $surname1='') {
-		$surns=WT_Query_Name::surnames('', $alpha, true, true, WT_GED_ID);
+		$surnames = WT_Query_Name::surnames('', $alpha, true, true, WT_GED_ID);
 		$out = '<ul>';
-		foreach ($surns as $surname=>$surns) {
-			$out .= '<li id="sb_fam_'.$surname.'" class="sb_fam_surname_li"><a href="'.$surname.'" title="'.$surname.'" alt="'.$alpha.'" class="sb_fam_surname">'.$surname.'</a>';
+		foreach (array_keys($surnames) as $surname) {
+			$out .= '<li id="sb_fam_' . $surname . '" class="sb_fam_surname_li"><a href="' . $surname . '" title="' . $surname . '" alt="' . $alpha . '" class="sb_fam_surname">' . $surname . '</a>';
 			if (!empty($surname1) && $surname1==$surname) {
 				$out .= '<div class="name_tree_div_visible">';
 				$out .= $this->getSurnameFams($alpha, $surname1);
@@ -222,7 +217,7 @@ class families_WT_Module extends WT_Module implements WT_Module_Sidebar {
 			$ids[] = $row->xref;
 		}
 
-		$vars=array('FAM');
+		$vars=array();
 		if (empty($ids)) {
 			//-- no match : search for FAM id
 			$where = "f_id LIKE ?";

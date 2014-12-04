@@ -2,10 +2,10 @@
 // Standard theme
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 //
 // PNG Icons By:Alessandro Rei; License: GPL; http://www.kde-look.org/content/show.php/Dark-Glass+reviewed?content=67902
 
@@ -32,7 +32,7 @@ if (!defined('WT_WEBTREES')) {
 $theme_name = "webtrees";
 
 // A version number in the path prevents browser-cache problems during upgrade
-define('WT_CSS_URL', WT_THEME_URL . 'css-1.5.1/');
+define('WT_CSS_URL', WT_THEME_URL . 'css-1.6.0/');
 
 $headerfile = WT_THEME_DIR.'header.php';
 $footerfile = WT_THEME_DIR.'footer.php';
@@ -62,12 +62,12 @@ $WT_IMAGES=array(
 
 //-- variables for the fan chart
 $fanChart = array(
-	'font'    =>WT_ROOT.'includes/fonts/DejaVuSans.ttf',
-	'size'    =>'7px',
-	'color'   =>'#000000',
-	'bgColor' =>'#eeeeee',
-	'bgMColor'=>'#b1cff0',
-	'bgFColor'=>'#e9daf1'
+	'font'     => WT_ROOT . 'includes/fonts/DejaVuSans.ttf',
+	'size'     => 7,
+	'color'    => '#000000',
+	'bgColor'  => '#eeeeee',
+	'bgMColor' => '#b1cff0',
+	'bgFColor' => '#e9daf1'
 );
 
 // Pedigree chart variables

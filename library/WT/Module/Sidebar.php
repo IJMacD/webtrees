@@ -1,8 +1,6 @@
 <?php
-// Classes and libraries for module system
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,11 +14,36 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+/**
+ * Interface WT_Module_Sidebar - Classes and libraries for module system
+ */
 interface WT_Module_Sidebar {
+	/**
+	 * The user can change the order of sidebars.  Until they do this, they are shown in this order.
+	 *
+	 * @return integer
+	 */
 	public function defaultSidebarOrder();
+
+	/**
+	 * Load this sidebar synchronously.
+	 * @return string
+	 */
 	public function getSidebarContent();
+
+	/**
+	 * Load this sidebar asynchronously.
+	 *
+	 * @return string
+	 */
 	public function getSidebarAjaxContent();
+
+	/**
+	 * Does this sidebar have anything to display for this individual?
+	 *
+	 * @return boolean
+	 */
 	public function hasSidebarContent();
 }

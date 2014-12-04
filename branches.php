@@ -2,10 +2,10 @@
 // List branches by surname
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,16 +19,17 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'branches.php');
 require './includes/session.php';
 
 
-$controller=new WT_Controller_Branches();
+$controller = new WT_Controller_Branches();
 $controller
 	->pageHeader()
-	->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js');
+	->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+	->addInlineJavascript('autocomplete();');
 
 ?>
 <div id="branches-page">
@@ -40,7 +41,7 @@ $controller
 					<?php echo WT_Gedcom_Tag::getLabel('SURN'); ?>
 				</td>
 				<td class="optionbox">
-					<input type="text" name="surname" id="SURN" value="<?php echo WT_Filter::escapeHtml($controller->getSurname()); ?>" dir="auto">
+					<input data-autocomplete-type="SURN" type="text" name="surname" id="SURN" value="<?php echo WT_Filter::escapeHtml($controller->getSurname()); ?>" dir="auto">
 					<input type="hidden" name="ged" id="ged" value="<?php echo WT_Filter::escapeHtml(WT_GEDCOM); ?>">
 					<input type="submit" value="<?php echo WT_I18N::translate('View'); ?>">
 					<p>

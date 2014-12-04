@@ -2,10 +2,10 @@
 // Popup window that will allow a user to search for a family id, person id
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,13 +19,15 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'find.php');
 require './includes/session.php';
 require_once WT_ROOT.'includes/functions/functions_print_lists.php';
 
-$controller=new WT_Controller_Simple();
+$controller = new WT_Controller_Simple();
 
 $type      = WT_Filter::get('type');
 $filter    = WT_Filter::get('filter');
@@ -83,7 +85,7 @@ case "repo":
 	$controller->setPageTitle(WT_I18N::translate('Find a repository'));
 	break;
 case "note":
-	$controller->setPageTitle(WT_I18N::translate('Find a note'));
+	$controller->setPageTitle(WT_I18N::translate('Find a shared note'));
 	break;
 case "source":
 	$controller->setPageTitle(WT_I18N::translate('Find a source'));
@@ -91,13 +93,11 @@ case "source":
 case "specialchar":
 	$controller->setPageTitle(WT_I18N::translate('Find a special character'));
 	$language_filter = WT_Filter::get('language_filter');
-	if (WT_USER_ID) {
-		// Users will probably always want the same language, so remember their setting
-		if (!$language_filter) {
-			$language_filter=get_user_setting(WT_USER_ID, 'default_language_filter');
-		} else {
-			set_user_setting(WT_USER_ID, 'default_language_filter', $language_filter);
-		}
+	// Users will probably always want the same language, so remember their setting
+	if (!$language_filter) {
+		$language_filter = Auth::user()->getPreference('default_language_filter');
+	} else {
+		Auth::user()->setPreference('default_language_filter', $language_filter);
 	}
 	require WT_ROOT.'includes/specialchars.php';
 	$action="filter";
@@ -217,7 +217,7 @@ if ($type == 'media') {
 	echo '" autofocus>',
 	help_link('simple_filter'),
 	'<p><input type="submit" name="search" value="', WT_I18N::translate('Filter'), '" onclick="this.form.subclick.value=this.name">&nbsp;
-	<input type="submit" name="all" value="', WT_I18N::translate('Display all'), '" onclick=\"this.form.subclick.value=this.name\">
+	<input type="submit" name="all" value="', WT_I18N::translate('Display all'), '" onclick="this.form.subclick.value=this.name">
 	</p></form></div>';
 }
 
@@ -300,12 +300,12 @@ if ($type == 'specialchar') {
 	<p><select id="language_filter" name="language_filter" onchange="submit();">
 	<option value="">', WT_I18N::translate('Change language'), '</option>';
 	$language_options = '';
-	foreach ($specialchar_languages as $key=>$value) {
+	foreach ($specialchar_languages as $key=>$special_character) {
 		$language_options.= '<option value="'.$key.'"';
 		if ($key==$language_filter) {
 			$language_options.=' selected="selected"';
 		}
-		$language_options.='>'.$value.'</option>';
+		$language_options.='>'.$special_character.'</option>';
 	}
 	echo $language_options,
 	'</select>
@@ -334,23 +334,12 @@ if ($type == "facts") {
 	DefaultTag.prototype= {
 		_newCounter:0
 		,view:function() {
-			var row=document.createElement("tr"),cell,o;
+			var row=document.createElement("tr"),cell;
 			row.appendChild(cell=document.createElement("td"));
-			o=null;
-			if (document.all) {
-				//Old IEs handle the creation of a checkbox already checked, as far as I know, only in this way
-				try {
-					o=document.createElement("<input type='checkbox' id='tag"+this._counter+"' "+(this.selected?"checked='checked'":"")+">");
-				} catch(e) {
-					o=null;
-				}
-			}
-			if (!o) {
-				o=document.createElement("input");
-				o.setAttribute("id","tag"+this._counter);
-				o.setAttribute("type","checkbox");
-				if (this.selected) o.setAttribute("checked", "checked");
-			}
+			var o = document.createElement("input");
+			o.id = "tag"+this._counter;
+			o.type = "checkbox";
+			o.checked = this.selected;
 			o.DefaultTag=this;
 			o.ParentRow=row;
 			o.onclick=function() {
@@ -471,7 +460,7 @@ if ($type == "facts") {
 	</table></div>
 
 	<table id="tabDefinedTagsShow"><tbody><tr>
-		<td><a href="#" onclick="Lister.showSelected();return false">', WT_I18N::translate('Show only selected tags'), ' (<span id="layCurSelectedCount"></span>)</a></td>
+		<td><a href="#" onclick="Lister.showSelected();return false">', WT_I18N::translate('Show only the selected tags'), ' (<span id="layCurSelectedCount"></span>)</a></td>
 		<td><a href="#" onclick="Lister.refreshNow(true);return false">', WT_I18N::translate('Show all tags'), '</a></td>
 	</tr></tbody></table>
 
@@ -481,7 +470,7 @@ if ($type == "facts") {
 	<td><td></tbody></table>
 
 	<table id="tabAction"><tbody><tr>
-		<td colspan="2"><button id="btnOk" disabled="disabled" onclick="if (!this.disabled)DoOK();">', WT_I18N::translate('save'), '</button></td>
+		<td colspan="2"><button id="btnOk" disabled="disabled" onclick="if (!this.disabled) { DoOK(); }">', WT_I18N::translate('save'), '</button></td>
 	<tr></tbody></table>
 	</td></tr></table>
 	</form></div>';
@@ -497,7 +486,7 @@ if ($action=="filter") {
 		$myindilist=search_indis_names($filter_array, array(WT_GED_ID), 'AND');
 		if ($myindilist) {
 			echo '<ul>';
-			usort($myindilist, array('WT_GedcomRecord', 'Compare'));
+			usort($myindilist, array('WT_GedcomRecord', 'compare'));
 			foreach ($myindilist as $indi) {
 				echo $indi->format_list('li', true);
 			}
@@ -516,13 +505,13 @@ if ($action=="filter") {
 		// Get the famrecs with hits in the gedcom record from the family table
 		$myfamlist = array_unique(array_merge(
 			search_fams_names($filter_array, array(WT_GED_ID), 'AND'),
-			search_fams($filter_array, array(WT_GED_ID), 'AND', true)
+			search_fams($filter_array, array(WT_GED_ID), 'AND')
 		));
 
 		if ($myfamlist) {
 			$curged = $GEDCOM;
 			echo '<ul>';
-			usort($myfamlist, array('WT_GedcomRecord', 'Compare'));
+			usort($myfamlist, array('WT_GedcomRecord', 'compare'));
 			foreach ($myfamlist as $family) {
 				echo $family->format_list('li', true);
 			}
@@ -622,12 +611,12 @@ if ($action=="filter") {
 	if ($type == "repo") {
 		echo '<div id="find-output">';
 		if ($filter) {
-			$repo_list = search_repos($filter_array, array(WT_GED_ID), 'AND', true);
+			$repo_list = search_repos($filter_array, array(WT_GED_ID), 'AND');
 		} else {
 			$repo_list = get_repo_list(WT_GED_ID);
 		}
 		if ($repo_list) {
-			usort($repo_list, array('WT_GedcomRecord', 'Compare'));
+			usort($repo_list, array('WT_GedcomRecord', 'compare'));
 			echo '<ul>';
 			foreach ($repo_list as $repo) {
 				echo '<li><a href="', $repo->getHtmlUrl(), '" onclick="pasteid(\'', $repo->getXref(), '\');"><span class="list_item">', $repo->getFullName(),'</span></a></li>';
@@ -645,12 +634,12 @@ if ($action=="filter") {
 	if ($type=="note") {
 		echo '<div id="find-output">';
 		if ($filter) {
-			$mynotelist = search_notes($filter_array, array(WT_GED_ID), 'AND', true);
+			$mynotelist = search_notes($filter_array, array(WT_GED_ID), 'AND');
 		} else {
 			$mynotelist = get_note_list(WT_GED_ID);
 		}
 		if ($mynotelist) {
-			usort($mynotelist, array('WT_GedcomRecord', 'Compare'));
+			usort($mynotelist, array('WT_GedcomRecord', 'compare'));
 			echo '<ul>';
 			foreach ($mynotelist as $note) {
 				echo '<li><a href="', $note->getHtmlUrl(), '" onclick="pasteid(\'', $note->getXref(), '\');"><span class="list_item">', $note->getFullName(),'</span></a></li>';
@@ -668,15 +657,17 @@ if ($action=="filter") {
 	if ($type=="source") {
 		echo '<div id="find-output">';
 		if ($filter) {
-			$mysourcelist = search_sources($filter_array, array(WT_GED_ID), 'AND', true);
+			$mysourcelist = search_sources($filter_array, array(WT_GED_ID), 'AND');
 		} else {
 			$mysourcelist = get_source_list(WT_GED_ID);
 		}
 		if ($mysourcelist) {
-			usort($mysourcelist, array('WT_GedcomRecord', 'Compare'));
+			usort($mysourcelist, array('WT_GedcomRecord', 'compare'));
 			echo '<ul>';
 			foreach ($mysourcelist as $source) {
-				echo '<li><a href="', $source->getHtmlUrl(), '" onclick="pasteid(\'', $source->getXref(), '\');"><span class="list_item">', $source->getFullName(),'</span></a></li>';
+				echo '<li><a href="', $source->getHtmlUrl(), '" onclick="pasteid(\'', $source->getXref(), '\', \'',
+					WT_Filter::escapeJs($source->getFullName()), '\');"><span class="list_item">',
+					$source->getFullName(),'</span></a></li>';
 			}
 			echo '</ul>
 			<p>', WT_I18N::translate('Total sources: %s', count($mysourcelist)), '</p>';
@@ -691,18 +682,18 @@ if ($action=="filter") {
 	if ($type == "specialchar") {
 		echo '<div id="find-output-special"><p>';
 		// lower case special characters
-		foreach ($lcspecialchars as $key=>$value) {
-			echo '<a class="largechars" href="#" onclick="return window.opener.paste_char(\'', $value, '\');">', $key, '</a> ';
+		foreach ($lcspecialchars as $special_character) {
+			echo '<a class="largechars" href="#" onclick="return window.opener.paste_char(\'', $special_character, '\');">', $special_character, '</a> ';
 		}
 		echo '</p><p>';
 		//upper case special characters
-		foreach ($ucspecialchars as $key=>$value) {
-			echo '<a class="largechars" href="#" onclick="return window.opener.paste_char(\'', $value, '\');">', $key, '</a> ';
+		foreach ($ucspecialchars as $special_character) {
+			echo '<a class="largechars" href="#" onclick="return window.opener.paste_char(\'', $special_character, '\');">', $special_character, '</a> ';
 		}
 		echo '</p><p>';
 		// other special characters (not letters)
-		foreach ($otherspecialchars as $key=>$value) {
-			echo '<a class="largechars" href="#" onclick="return window.opener.paste_char(\'', $value, '\');">', $key, '</a> ';
+		foreach ($otherspecialchars as $special_character) {
+			echo '<a class="largechars" href="#" onclick="return window.opener.paste_char(\'', $special_character, '\');">', $special_character, '</a> ';
 		}
 		echo '</p></div>';
 	}

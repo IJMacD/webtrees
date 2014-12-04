@@ -2,7 +2,7 @@
 // Setup Wizard
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,26 +16,30 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+// To embed webtrees code in other applications, we must explicitly declare any global variables that we create.
+global $WT_REQUEST, $WT_SESSION;
 
 define('WT_SCRIPT_NAME', 'setup.php');
 define('WT_CONFIG_FILE', 'config.ini.php');
+
+require 'library/autoload.php';
 
 // This script (uniquely) does not load session.php.
 // session.php won’t run until a configuration file exists…
 // This next block of code is a minimal version of session.php
 define('WT_WEBTREES',    'webtrees');
-require 'includes/authentication.php'; // for AddToLog()
+define('WT_SERVER_NAME', '');
+define('WT_SCRIPT_PATH', '');
 require 'includes/functions/functions_db.php'; // for get/setSiteSetting()
 define('WT_DATA_DIR',    'data/');
-define('WT_DEBUG_LANG',  false);
 define('WT_DEBUG_SQL',   false);
 define('WT_REQUIRED_MYSQL_VERSION', '5.0.13');
 define('WT_REQUIRED_PHP_VERSION',   '5.3.2');
 define('WT_MODULES_DIR', 'modules_v3/');
 define('WT_ROOT', '');
 define('WT_GED_ID', null);
-define('WT_USER_ID', 0);
 define('WT_PRIV_PUBLIC', 2);
 define('WT_PRIV_USER',   1);
 define('WT_PRIV_NONE',   0);
@@ -55,15 +59,13 @@ if (version_compare(PHP_VERSION, WT_REQUIRED_PHP_VERSION)<0) {
 	exit;
 }
 
-// Invoke the Zend Framework Autoloader, so we can use Zend_XXXXX and WT_XXXXX classes
-set_include_path(WT_ROOT.'library'.PATH_SEPARATOR.get_include_path());
-require_once 'Zend/Loader/Autoloader.php';
-Zend_Loader_Autoloader::getInstance()->registerNamespace('WT_');
 require 'includes/functions/functions.php';
-require 'includes/functions/functions_utf-8.php';
 require 'includes/functions/functions_edit.php';
-$WT_REQUEST=new Zend_Controller_Request_Http();
-$WT_SESSION=new stdClass; $WT_SESSION->locale=null; // Can't use Zend_Session until we've checked ini_set
+
+$WT_REQUEST = new Zend_Controller_Request_Http();
+$WT_SESSION = new stdClass;
+$WT_SESSION->locale  = null; // Needed for WT_I18N
+$WT_SESSION->wt_user = null; // Needed for WT_Auth
 define('WT_LOCALE', WT_I18N::init(WT_Filter::post('lang', '[@a-zA-Z_]+')));
 
 header('Content-Type: text/html; charset=UTF-8');
@@ -81,7 +83,7 @@ header('Content-Type: text/html; charset=UTF-8');
 		a {color: black; font-weight: normal; text-decoration: none;}
 		a:hover {color: #81A9CB;}
 		h1 {color: #81A9CB; font-weight:normal;}
-		legend {color:#81A9CB; font-style: italic; font-weight:bold; padding: 0 5px 5px; align: top;}
+		legend {color:#81A9CB; font-style: italic; font-weight:bold; padding: 0 5px 5px;}
 		.good {color: green;}
 		.bad {color: red; font-weight: bold;}
 		.info {color: blue;}
@@ -89,7 +91,7 @@ header('Content-Type: text/html; charset=UTF-8');
 	</head>
 	<body>
 		<h1>
-			<?php echo WT_I18N::translate('Setup wizard for <b>webtrees</b>'); ?>
+			<?php echo WT_I18N::translate('Setup wizard for webtrees'); ?>
 		</h1>
 <?php
 
@@ -111,7 +113,7 @@ if (!isset($_POST['lang'])) {
 
 	// Mandatory functions
 	$disable_functions=preg_split('/ *, */', ini_get('disable_functions'));
-	foreach (array('ini_set', 'parse_ini_file') as $function) {
+	foreach (array('parse_ini_file') as $function) {
 		if (in_array($function, $disable_functions)) {
 			echo '<p class="bad">', /* I18N: %s is a PHP function/module/setting */ WT_I18N::translate('%s is disabled on this server.  You cannot install webtrees until it is enabled.  Please ask your server’s administrator to enable it.', $function.'()'), '</p>';
 			$errors=true;
@@ -126,7 +128,6 @@ if (!isset($_POST['lang'])) {
 	}
 	// Recommended extensions
 	foreach (array(
-		'calendar'  => /* I18N: a program feature */ WT_I18N::translate('jewish calendar'),
 		'gd'        => /* I18N: a program feature */ WT_I18N::translate('creating thumbnails of images'),
 		'xml'       => /* I18N: a program feature */ WT_I18N::translate('reporting'),
 		'simplexml' => /* I18N: a program feature */ WT_I18N::translate('reporting'),
@@ -141,7 +142,7 @@ if (!isset($_POST['lang'])) {
 		'file_uploads'=>/* I18N: a program feature */ WT_I18N::translate('file upload capability'),
 	) as $setting=>$features) {
 		if (!ini_get($setting)) {
-			echo '<p class="bad">', WT_I18N::translate('PHP setting “%1$s” is disabled. Without it, the following features will not work: %2$s.  Please ask your server’s administrator to enable it.', $setting, $features), '</p>';
+			echo '<p class="bad">', WT_I18N::translate('PHP setting “%1$s” is disabled.  Without it, the following features will not work: %2$s.  Please ask your server’s administrator to enable it.', $setting, $features), '</p>';
 			$warnings=true;
 		}
 	}
@@ -153,39 +154,40 @@ if (!isset($_POST['lang'])) {
 	// However, this is unreliable, especially on servers with custom restrictions.
 	// Now, we just show the default values.  These can (hopefully!) be changed using the
 	// site settings page.
-	$maxmem=to_mb(ini_get('memory_limit'));
-	$maxcpu=ini_get('max_execution_time');
+	$memory_limit = ini_get('memory_limit');
+	if (substr_compare($memory_limit, 'M', -1) === 0) {
+		$memory_limit = substr($memory_limit, 0, -1);
+	} elseif (substr_compare($memory_limit, 'K', -1) === 0) {
+		$memory_limit = substr($memory_limit, 0, -1) / 1024;
+	} elseif (substr_compare($memory_limit, 'G', -1) === 0) {
+		$memory_limit = substr($memory_limit, 0, -1) * 1024;
+	}
+	$max_execution_time = ini_get('max_execution_time');
 	echo
 		'<p>',
 		WT_I18N::translate('The memory and CPU time requirements depend on the number of individuals in your family tree.'),
 		'<br>',
 		WT_I18N::translate('The following list shows typical requirements.'),
 		'</p><p>',
-		WT_I18N::translate('Small systems (500 individuals): 16-32MB, 10-20 seconds'),
+		WT_I18N::translate('Small systems (500 individuals): 16–32 MB, 10–20 seconds'),
 		'<br>',
-		WT_I18N::translate('Medium systems (5000 individuals): 32-64MB, 20-40 seconds'),
+		WT_I18N::translate('Medium systems (5,000 individuals): 32–64 MB, 20–40 seconds'),
 		'<br>',
-		WT_I18N::translate('Large systems (50000 individuals): 64-128MB, 40-80 seconds'),
+		WT_I18N::translate('Large systems (50,000 individuals): 64–128 MB, 40–80 seconds'),
 		'</p>',
-		($maxmem<32 || $maxcpu<20) ? '<p class="bad">' : '<p class="good">',
-		WT_I18N::translate('This server’s memory limit is %dMB and its CPU time limit is %d seconds.', $maxmem, $maxcpu),
+		($memory_limit < 32 || $max_execution_time > 0 && $max_execution_time < 20) ? '<p class="bad">' : '<p class="good">',
+		WT_I18N::translate('This server’s memory limit is %d MB and its CPU time limit is %d seconds.', $memory_limit, $max_execution_time),
 		'</p><p>',
 		WT_I18N::translate('If you try to exceed these limits, you may experience server time-outs and blank pages.'),
 		'</p><p>',
-		WT_I18N::translate('If your server’s security policy permits it, you will be able to request increased memory or CPU time using the <b>webtrees</b> administration page.  Otherwise, you will need to contact your server’s administrator.'),
+		WT_I18N::translate('If your server’s security policy permits it, you will be able to request increased memory or CPU time using the webtrees administration page.  Otherwise, you will need to contact your server’s administrator.'),
 		'</p>';
 	if (!$errors) {
-		echo '<input type="hidden" name="maxcpu" value="', $maxcpu, '">';
-		echo '<input type="hidden" name="maxmem" value="', $maxmem, '">';
 		echo '<br><hr><input type="submit" id="btncontinue" value="', /* I18N: button label */ WT_I18N::translate('continue'), '">';
 
 	}
 	echo '</form></body></html>';
 	exit;
-} else {
-	// Copy these values through to the next step
-	echo '<input type="hidden" name="maxcpu" value="', $_POST['maxcpu'], '">';
-	echo '<input type="hidden" name="maxmem" value="', $_POST['maxmem'], '">';
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -248,7 +250,7 @@ try {
 if (empty($_POST['dbuser']) || !WT_DB::isConnected() || !$db_version_ok) {
 	echo
 		'<h2>', WT_I18N::translate('Connection to database server'), '</h2>',
-		'<p>', WT_I18N::translate('<b>webtrees</b> needs a MySQL database, version %s or later.', WT_REQUIRED_MYSQL_VERSION), '</p>',
+		'<p>', WT_I18N::translate('webtrees needs a MySQL database, version %s or later.', WT_REQUIRED_MYSQL_VERSION), '</p>',
 		'<p>', WT_I18N::translate('Your server’s administrator will provide you with the connection details.'), '</p>',
 		'<fieldset><legend>', WT_I18N::translate('Database connection'), '</legend>',
 		'<table border="0"><tr><td>',
@@ -321,7 +323,7 @@ if ($dbname_ok) {
 	try {
 		// PhpGedView (4.2.3 and earlier) and many other applications have a USERS table.
 		// webtrees has a USER table
-		$dummy=WT_DB::query("SELECT COUNT(*) FROM `##users`")->fetchOne();
+		$dummy=WT_DB::prepare("SELECT COUNT(*) FROM `##users`")->fetchOne();
 		echo '<p class="bad">', WT_I18N::translate('This database and table-prefix appear to be used by another application.  If you have an existing PhpGedView system, you should create a new webtrees system.  You can import your PhpGedView data and settings later.'), '</p>';
 		$dbname_ok=false;
 	} catch (PDOException $ex) {
@@ -332,7 +334,7 @@ if ($dbname_ok) {
 	try {
 		// PhpGedView (4.2.4 and later) has a site_setting.site_setting_name column.
 		// [We changed the column name in webtrees, so we can tell the difference!]
-		$dummy=WT_DB::query("SELECT site_setting_value FROM `##site_setting` WHERE site_setting_name='PGV_SCHEMA_VERSION'")->fetchOne();
+		$dummy=WT_DB::prepare("SELECT site_setting_value FROM `##site_setting` WHERE site_setting_name='PGV_SCHEMA_VERSION'")->fetchOne();
 		echo '<p class="bad">', WT_I18N::translate('This database and table-prefix appear to be used by another application.  If you have an existing PhpGedView system, you should create a new webtrees system.  You can import your PhpGedView data and settings later.'), '</p>';
 		$dbname_ok=false;
 	} catch (PDOException $ex) {
@@ -348,7 +350,7 @@ if (!$dbname_ok) {
 		'<table border="0"><tr><td>',
 		WT_I18N::translate('Database name'), '</td><td>',
 		'<input type="text" name="dbname" value="', WT_Filter::escapeHtml($_POST['dbname']), '" autofocus></td><td>',
-		WT_I18N::translate('This is case sensitive. If a database with this name does not already exist webtrees will attempt to create one for you. Success will depend on permissions set for your web server, but you will be notified if this fails.'),
+		WT_I18N::translate('This is case sensitive.  If a database with this name does not already exist webtrees will attempt to create one for you.  Success will depend on permissions set for your web server, but you will be notified if this fails.'),
 		'</td></tr><tr><td>',
 		WT_I18N::translate('Table prefix'), '</td><td>',
 		'<input type="text" name="tblpfx" value="', WT_Filter::escapeHtml($_POST['tblpfx']), '"></td><td>',
@@ -386,7 +388,7 @@ if (empty($_POST['wtname']) || empty($_POST['wtuser']) || strlen($_POST['wtpass'
 	echo
 		'<h2>', WT_I18N::translate('System settings'), '</h2>',
 		'<h3>', WT_I18N::translate('Administrator account'), '</h3>',
-		'<p>', WT_I18N::translate('You need to set up an administrator account.  This account can control all aspects of this <b>webtrees</b> installation.  Please choose a strong password.'), '</p>',
+		'<p>', WT_I18N::translate('You need to set up an administrator account.  This account can control all aspects of this webtrees installation.  Please choose a strong password.'), '</p>',
 		'<fieldset><legend>', WT_I18N::translate('Administrator account'), '</legend>',
 		'<table border="0"><tr><td>',
 		WT_I18N::translate('Your name'), '</td><td>',
@@ -435,9 +437,9 @@ try {
 		" gedcom_id     INTEGER AUTO_INCREMENT NOT NULL,".
 		" gedcom_name   VARCHAR(255)           NOT NULL,".
 		" sort_order    INTEGER                NOT NULL DEFAULT 0,".
-		" PRIMARY KEY     (gedcom_id),".
-		" UNIQUE  KEY ux1 (gedcom_name),".
-		"         KEY ix1 (sort_order)".
+		" PRIMARY KEY                (gedcom_id),".
+		" UNIQUE  KEY `##gedcom_ix1` (gedcom_name),".
+		"         KEY `##gedcom_ix2` (sort_order)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -452,8 +454,8 @@ try {
 		" gedcom_id     INTEGER      NOT NULL,".
 		" setting_name  VARCHAR(32)  NOT NULL,".
 		" setting_value VARCHAR(255) NOT NULL,".
-		" PRIMARY KEY     (gedcom_id, setting_name),".
-		" FOREIGN KEY fk1 (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                        (gedcom_id, setting_name),".
+		" FOREIGN KEY `##gedcom_setting_fk1` (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -463,9 +465,9 @@ try {
 		" real_name VARCHAR(64)            NOT NULL,".
 		" email     VARCHAR(64)            NOT NULL,".
 		" password  VARCHAR(128)           NOT NULL,".
-		" PRIMARY KEY     (user_id),".
-		" UNIQUE  KEY ux1 (user_name),".
-		" UNIQUE  KEY ux2 (email)".
+		" PRIMARY KEY              (user_id),".
+		" UNIQUE  KEY `##user_ix1` (user_name),".
+		" UNIQUE  KEY `##user_ix2` (email)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -473,8 +475,8 @@ try {
 		" user_id       INTEGER      NOT NULL,".
 		" setting_name  VARCHAR(32)  NOT NULL,".
 		" setting_value VARCHAR(255) NOT NULL,".
-		" PRIMARY KEY     (user_id, setting_name),".
-		" FOREIGN KEY fk1 (user_id) REFERENCES `##user` (user_id) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                      (user_id, setting_name),".
+		" FOREIGN KEY `##user_setting_fk1` (user_id) REFERENCES `##user` (user_id) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -483,9 +485,9 @@ try {
 		" gedcom_id     INTEGER      NOT NULL,".
 		" setting_name  VARCHAR(32)  NOT NULL,".
 		" setting_value VARCHAR(255) NOT NULL,".
-		" PRIMARY KEY     (user_id, gedcom_id, setting_name),".
-		" FOREIGN KEY fk1 (user_id)   REFERENCES `##user`   (user_id)   /* ON DELETE CASCADE */,".
-		" FOREIGN KEY fk2 (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                             (user_id, gedcom_id, setting_name),".
+		" FOREIGN KEY `##user_gedcom_setting_fk1` (user_id)   REFERENCES `##user` (user_id) /* ON DELETE CASCADE */,".
+		" FOREIGN KEY `##user_gedcom_setting_fk2` (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -497,12 +499,12 @@ try {
 		" ip_address  VARCHAR(40)  NOT NULL,".
 		" user_id     INTEGER          NULL,".
 		" gedcom_id   INTEGER          NULL,".
-		" PRIMARY KEY     (log_id),".
-		"         KEY ix1 (log_time),".
-		"         KEY ix2 (log_type),".
-		"         KEY ix3 (ip_address),".
-		" FOREIGN KEY fk1 (user_id)   REFERENCES `##user`   (user_id)   /* ON DELETE SET NULL */,".
-		" FOREIGN KEY fk2 (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE SET NULL */".
+		" PRIMARY KEY             (log_id),".
+		"         KEY `##log_ix1` (log_time),".
+		"         KEY `##log_ix2` (log_type),".
+		"         KEY `##log_ix3` (ip_address),".
+		" FOREIGN KEY `##log_fk1` (user_id)   REFERENCES `##user`(user_id) /* ON DELETE SET NULL */,".
+		" FOREIGN KEY `##log_fk2` (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE SET NULL */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -515,10 +517,10 @@ try {
 		" old_gedcom     MEDIUMTEXT                              NOT NULL,".
 		" new_gedcom     MEDIUMTEXT                              NOT NULL,".
 		" user_id        INTEGER                                 NOT NULL,".
-		" PRIMARY KEY     (change_id),".
-		"         KEY ix1 (gedcom_id, status, xref),".
-		" FOREIGN KEY fk1 (user_id)   REFERENCES `##user`   (user_id)   /* ON DELETE RESTRICT */,".
-		" FOREIGN KEY fk2 (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                (change_id),".
+		"         KEY `##change_ix1` (gedcom_id, status, xref),".
+		" FOREIGN KEY `##change_fk1` (user_id)   REFERENCES `##user` (user_id) /* ON DELETE RESTRICT */,".
+		" FOREIGN KEY `##change_fk2` (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -530,8 +532,8 @@ try {
 		" subject    VARCHAR(255)           NOT NULL,".
 		" body       TEXT                   NOT NULL,".
 		" created    TIMESTAMP              NOT NULL DEFAULT CURRENT_TIMESTAMP,".
-		" PRIMARY KEY     (message_id),".
-		" FOREIGN KEY fk1 (user_id)   REFERENCES `##user` (user_id) /* ON DELETE RESTRICT */".
+		" PRIMARY KEY                 (message_id),".
+		" FOREIGN KEY `##message_fk1` (user_id)   REFERENCES `##user` (user_id) /* ON DELETE RESTRICT */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -543,9 +545,9 @@ try {
 		" resn            ENUM ('none', 'privacy', 'confidential', 'hidden') NOT NULL,".
 		" comment         VARCHAR(255)                                           NULL,".
 		" updated         TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,".
-		" PRIMARY KEY     (default_resn_id),".
-		" UNIQUE  KEY ux1 (gedcom_id, xref, tag_type),".
-		" FOREIGN KEY fk1 (gedcom_id)  REFERENCES `##gedcom` (gedcom_id)".
+		" PRIMARY KEY                      (default_resn_id),".
+		" UNIQUE  KEY `##default_resn_ix1` (gedcom_id, xref, tag_type),".
+		" FOREIGN KEY `##default_resn_fk1` (gedcom_id)  REFERENCES `##gedcom` (gedcom_id)".
 		") ENGINE=InnoDB COLLATE=utf8_unicode_ci"
 	);
 	WT_DB::exec(
@@ -555,8 +557,8 @@ try {
 		" i_rin    VARCHAR(20)         NOT NULL,".
 		" i_sex    ENUM('U', 'M', 'F') NOT NULL,".
 		" i_gedcom MEDIUMTEXT          NOT NULL,".
-		" PRIMARY KEY     (i_id, i_file),".
-		" UNIQUE  KEY ux1 (i_file, i_id)".
+		" PRIMARY KEY                     (i_id, i_file),".
+		" UNIQUE  KEY `##individuals_ix1` (i_file, i_id)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -567,10 +569,10 @@ try {
 		" f_wife    VARCHAR(20)      NULL,".
 		" f_gedcom  MEDIUMTEXT   NOT NULL,".
 		" f_numchil INTEGER      NOT NULL,".
-		" PRIMARY KEY     (f_id, f_file),".
-		" UNIQUE  KEY ux1 (f_file, f_id),".
-		"         KEY ix1 (f_husb),".
-		"         KEY ix2 (f_wife)".
+		" PRIMARY KEY                  (f_id, f_file),".
+		" UNIQUE  KEY `##families_ix1` (f_file, f_id),".
+		"         KEY `##families_ix2` (f_husb),".
+		"         KEY `##families_ix3` (f_wife)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -581,9 +583,9 @@ try {
 		" p_file        INTEGER               NOT  NULL,".
 		" p_std_soundex TEXT                       NULL,".
 		" p_dm_soundex  TEXT                       NULL,".
-		" PRIMARY KEY     (p_id),".
-		"         KEY ix1 (p_file, p_place),".
-		" UNIQUE  KEY ux1 (p_parent_id, p_file, p_place)".
+		" PRIMARY KEY                (p_id),".
+		"         KEY `##places_ix1` (p_file, p_place),".
+		" UNIQUE  KEY `##places_ix2` (p_parent_id, p_file, p_place)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -591,10 +593,10 @@ try {
 		" pl_p_id INTEGER NOT NULL,".
 		" pl_gid  VARCHAR(20)  NOT NULL,".
 		" pl_file INTEGER  NOT NULL,".
-		" PRIMARY KEY (pl_p_id, pl_gid, pl_file),".
-		"         KEY ix1 (pl_p_id),".
-		"         KEY ix2 (pl_gid),".
-		"         KEY ix3 (pl_file)".
+		" PRIMARY KEY                    (pl_p_id, pl_gid, pl_file),".
+		"         KEY `##placelinks_ix1` (pl_p_id),".
+		"         KEY `##placelinks_ix2` (pl_gid),".
+		"         KEY `##placelinks_ix3` (pl_file)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -609,16 +611,16 @@ try {
 		" d_gid        VARCHAR(20) NOT NULL,".
 		" d_file       INTEGER     NOT NULL,".
 		" d_type       ENUM ('@#DGREGORIAN@', '@#DJULIAN@', '@#DHEBREW@', '@#DFRENCH R@', '@#DHIJRI@', '@#DROMAN@', '@#DJALALI@') NOT NULL,".
-		" KEY ix1 (d_day),".
-		" KEY ix2 (d_month),".
-		" KEY ix3 (d_mon),".
-		" KEY ix4 (d_year),".
-		" KEY ix5 (d_julianday1),".
-		" KEY ix6 (d_julianday2),".
-		" KEY ix7 (d_gid),".
-		" KEY ix8 (d_file),".
-		" KEY ix9 (d_type),".
-		" KEY ix10 (d_fact, d_gid)".
+		" KEY `##dates_ix1` (d_day),".
+		" KEY `##dates_ix2` (d_month),".
+		" KEY `##dates_ix3` (d_mon),".
+		" KEY `##dates_ix4` (d_year),".
+		" KEY `##dates_ix5` (d_julianday1),".
+		" KEY `##dates_ix6` (d_julianday2),".
+		" KEY `##dates_ix7` (d_gid),".
+		" KEY `##dates_ix8` (d_file),".
+		" KEY `##dates_ix9` (d_type),".
+		" KEY `##dates_ix10` (d_fact, d_gid)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -630,10 +632,10 @@ try {
 		" m_filename VARCHAR(512)               NULL,".
 		" m_file     INTEGER                NOT NULL,".
 		" m_gedcom   MEDIUMTEXT                 NULL,".
-		" PRIMARY KEY     (m_file, m_id),".
-		" UNIQUE  KEY ix1 (m_id, m_file),".
-		"         KEY ix2 (m_ext, m_type),".
-		"         KEY ix3 (m_titl)".
+		" PRIMARY KEY               (m_file, m_id),".
+		" UNIQUE  KEY `##media_ix1` (m_id, m_file),".
+		"         KEY `##media_ix2` (m_ext, m_type),".
+		"         KEY `##media_ix3` (m_titl)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -641,8 +643,8 @@ try {
 		" gedcom_id   INTEGER     NOT NULL,".
 		" record_type VARCHAR(15) NOT NULL,".
 		" next_id     DECIMAL(20) NOT NULL,".
-		" PRIMARY KEY     (gedcom_id, record_type),".
-		" FOREIGN KEY fk1 (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                 (gedcom_id, record_type),".
+		" FOREIGN KEY `##next_id_fk1` (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -651,8 +653,8 @@ try {
 		" o_file   INTEGER     NOT NULL,".
 		" o_type   VARCHAR(15) NOT NULL,".
 		" o_gedcom MEDIUMTEXT      NULL,".
-		" PRIMARY KEY     (o_id, o_file),".
-		" UNIQUE  KEY ux1 (o_file, o_id)".
+		" PRIMARY KEY               (o_id, o_file),".
+		" UNIQUE  KEY `##other_ix1` (o_file, o_id)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -661,9 +663,9 @@ try {
 		" s_file   INTEGER        NOT NULL,".
 		" s_name   VARCHAR(255)   NOT NULL,".
 		" s_gedcom MEDIUMTEXT     NOT NULL,".
-		" PRIMARY KEY     (s_id, s_file),".
-		" UNIQUE  KEY ux1 (s_file, s_id),".
-		"         KEY ix1 (s_name)".
+		" PRIMARY KEY                 (s_id, s_file),".
+		" UNIQUE  KEY `##sources_ix1` (s_file, s_id),".
+		"         KEY `##sources_ix2` (s_name)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -672,8 +674,8 @@ try {
 		" l_from    VARCHAR(20) NOT NULL,".
 		" l_type    VARCHAR(15) NOT NULL,".
 		" l_to      VARCHAR(20) NOT NULL,".
-		" PRIMARY KEY      (l_from, l_file, l_type, l_to),".
-		" UNIQUE INDEX ux1 (l_to, l_file, l_type, l_from)".
+		" PRIMARY KEY              (l_from, l_file, l_type, l_to),".
+		" UNIQUE  KEY `##link_ix1` (l_to, l_file, l_type, l_from)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -692,10 +694,10 @@ try {
 		" n_soundex_surn_std VARCHAR(255)     NULL,".
 		" n_soundex_givn_dm  VARCHAR(255)     NULL,".
 		" n_soundex_surn_dm  VARCHAR(255)     NULL,".
-		" PRIMARY KEY (n_id, n_file, n_num),".
-		"         KEY ix1 (n_full, n_id, n_file),".
-		"         KEY ix2 (n_surn, n_file, n_type, n_id),".
-		"         KEY ix3 (n_givn, n_file, n_type, n_id)".
+		" PRIMARY KEY              (n_id, n_file, n_num),".
+		"         KEY `##name_ix1` (n_full, n_id, n_file),".
+		"         KEY `##name_ix2` (n_surn, n_file, n_type, n_id),".
+		"         KEY `##name_ix3` (n_givn, n_file, n_type, n_id)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -713,8 +715,8 @@ try {
 		" module_name   VARCHAR(32) NOT NULL,".
 		" setting_name  VARCHAR(32) NOT NULL,".
 		" setting_value MEDIUMTEXT  NOT NULL,".
-		" PRIMARY KEY     (module_name, setting_name),".
-		" FOREIGN KEY fk1 (module_name) REFERENCES `##module` (module_name) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                        (module_name, setting_name),".
+		" FOREIGN KEY `##module_setting_fk1` (module_name) REFERENCES `##module` (module_name) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -723,9 +725,9 @@ try {
 		" gedcom_id     INTEGER     NOT NULL,".
 		" component     ENUM('block', 'chart', 'menu', 'report', 'sidebar', 'tab', 'theme') NOT NULL,".
 		" access_level  TINYINT     NOT NULL,".
-		" PRIMARY KEY     (module_name, gedcom_id, component),".
-		" FOREIGN KEY fk1 (module_name) REFERENCES `##module` (module_name) /* ON DELETE CASCADE */,".
-		" FOREIGN KEY fk2 (gedcom_id  ) REFERENCES `##gedcom` (gedcom_id)   /* ON DELETE CASCADE */".
+		" PRIMARY KEY                        (module_name, gedcom_id, component),".
+		" FOREIGN KEY `##module_privacy_fk1` (module_name) REFERENCES `##module` (module_name) /* ON DELETE CASCADE */,".
+		" FOREIGN KEY `##module_privacy_fk2` (gedcom_id)   REFERENCES `##gedcom` (gedcom_id)   /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -737,10 +739,10 @@ try {
 		" location    ENUM('main', 'side')       NULL,".
 		" block_order INTEGER                NOT NULL,".
 		" module_name VARCHAR(32)            NOT NULL,".
-		" PRIMARY KEY     (block_id),".
-		" FOREIGN KEY fk1 (gedcom_id  ) REFERENCES `##gedcom` (gedcom_id  ), /* ON DELETE CASCADE */".
-		" FOREIGN KEY fk2 (user_id    ) REFERENCES `##user`   (user_id    ), /* ON DELETE CASCADE */".
-		" FOREIGN KEY fk3 (module_name) REFERENCES `##module` (module_name)  /* ON DELETE CASCADE */".
+		" PRIMARY KEY               (block_id),".
+		" FOREIGN KEY `##block_fk1` (gedcom_id)   REFERENCES `##gedcom` (gedcom_id),  /* ON DELETE CASCADE */".
+		" FOREIGN KEY `##block_fk2` (user_id)     REFERENCES `##user`   (user_id),    /* ON DELETE CASCADE */".
+		" FOREIGN KEY `##block_fk3` (module_name) REFERENCES `##module` (module_name) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -748,8 +750,8 @@ try {
 		" block_id      INTEGER     NOT NULL,".
 		" setting_name  VARCHAR(32) NOT NULL,".
 		" setting_value TEXT        NOT NULL,".
-		" PRIMARY KEY     (block_id, setting_name),".
-		" FOREIGN KEY fk1 (block_id) REFERENCES `##block` (block_id) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                       (block_id, setting_name),".
+		" FOREIGN KEY `##block_setting_fk1` (block_id) REFERENCES `##block` (block_id) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -758,8 +760,8 @@ try {
 		" page_name      VARCHAR(32) NOT NULL,".
 		" page_parameter VARCHAR(32) NOT NULL,".
 		" page_count     INTEGER     NOT NULL,".
-		" PRIMARY KEY     (gedcom_id, page_name, page_parameter),".
-		" FOREIGN KEY fk1 (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                     (gedcom_id, page_name, page_parameter),".
+		" FOREIGN KEY `##hit_counter_fk1` (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -777,9 +779,9 @@ try {
 		" user_id      INTEGER     NOT NULL,".
 		" ip_address   VARCHAR(32) NOT NULL,".
 		" session_data MEDIUMBLOB  NOT NULL,".
-		" PRIMARY KEY     (session_id),".
-		"         KEY ix1 (session_time),".
-		"         KEY ix2 (user_id, ip_address)".
+		" PRIMARY KEY                 (session_id),".
+		"         KEY `##session_ix1` (session_time),".
+		"         KEY `##session_ix2` (user_id, ip_address)".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	WT_DB::exec(
@@ -788,9 +790,9 @@ try {
 		" gedcom_id       INTEGER                NOT NULL,".
 		" chunk_data      MEDIUMBLOB             NOT NULL,".
 		" imported        BOOLEAN                NOT NULL DEFAULT FALSE,".
-		" PRIMARY KEY     (gedcom_chunk_id),".
-		"         KEY ix1 (gedcom_id, imported),".
-		" FOREIGN KEY fk1 (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
+		" PRIMARY KEY                      (gedcom_chunk_id),".
+		"         KEY `##gedcom_chunk_ix1` (gedcom_id, imported),".
+		" FOREIGN KEY `##gedcom_chunk_fk1` (gedcom_id) REFERENCES `##gedcom` (gedcom_id) /* ON DELETE CASCADE */".
 		") COLLATE utf8_unicode_ci ENGINE=InnoDB"
 	);
 	//WT_DB::exec(
@@ -817,10 +819,9 @@ try {
 		" rule                 ENUM('allow', 'deny', 'robot', 'unknown') NOT NULL DEFAULT 'unknown',".
 		" comment              VARCHAR(255)     NOT NULL,".
 		" updated              TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,".
-		" PRIMARY KEY     (site_access_rule_id),".
-		"         KEY ix1 (rule),".
-		"         KEY ix2 (user_agent_pattern, ip_address_start, ip_address_end, rule),".
-		"         KEY ix3 (updated)".
+		" PRIMARY KEY                          (site_access_rule_id),".
+		" UNIQUE  KEY `##site_access_rule_ix1` (ip_address_end, ip_address_start, user_agent_pattern, rule),".
+		"         KEY `##site_access_rule_ix2` (rule)".
 		") ENGINE=InnoDB COLLATE=utf8_unicode_ci"
 	);
 
@@ -843,7 +844,7 @@ try {
 		"INSERT IGNORE INTO `##user` (user_id, user_name, real_name, email, password) VALUES ".
 		" (-1, 'DEFAULT_USER', 'DEFAULT_USER', 'DEFAULT_USER', 'DEFAULT_USER'), (1, ?, ?, ?, ?)"
 	)->execute(array(
-		$_POST['wtuser'], $_POST['wtname'], $_POST['wtemail'], crypt($_POST['wtpass'])
+		$_POST['wtuser'], $_POST['wtname'], $_POST['wtemail'], password_hash($_POST['wtpass'], PASSWORD_DEFAULT)
 	));
 
 	WT_DB::prepare(
@@ -926,15 +927,3 @@ try {
 echo '</form>';
 echo '</body>';
 echo '</html>';
-
-function to_mb($str) {
-	if (substr($str, -1, 1)=='K') {
-		return floor(substr($str, 0, strlen($str)-1)/1024);
-	}
-	if (substr($str, -1, 1)=='M') {
-		return floor(substr($str, 0, strlen($str)-1));
-	}
-	if (substr($str, -1, 1)=='G') {
-		return floor(1024*substr($str, 0, strlen($str)-1));
-	}
-}

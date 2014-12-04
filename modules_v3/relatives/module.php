@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,25 +19,20 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
-	// Extend WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		return /* I18N: Name of a module */ WT_I18N::translate('Families');
 	}
 
-	// Extend WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		return /* I18N: Description of the “Families” module */ WT_I18N::translate('A tab showing the close relatives of an individual.');
 	}
 
-	// Implement WT_Module_Tab
+	/** {@inheritdoc} */
 	public function defaultTabOrder() {
 		return 20;
 	}
@@ -71,7 +66,6 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 	// print parents informations
 	function printFamily(WT_Family $family, $type, $label) {
 		global $controller;
-		global $personcount; // TODO: use a unique id instead?
 		global $SHOW_PRIVATE_RELATIONSHIPS;
 
 		if ($SHOW_PRIVATE_RELATIONSHIPS) {
@@ -98,12 +92,12 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 		///// HUSB /////
 		$found = false;
 		foreach ($family->getFacts('HUSB', false, $access_level) as $fact) {
-			$found |= !$fact->isOld();
+			$found |= !$fact->isPendingDeletion();
 			$person = $fact->getTarget();
 			if ($person instanceof WT_Individual) {
-				if ($fact->isNew()) {
+				if ($fact->isPendingAddition()) {
 					$class = 'facts_label new';
-				} elseif ($fact->isOld()) {
+				} elseif ($fact->isPendingDeletion()) {
 					$class = 'facts_label old';
 				} else {
 					$class = 'facts_label';
@@ -114,7 +108,7 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 						<?php echo get_close_relationship_name($controller->record, $person); ?>
 					</td>
 					<td class="<?php echo $controller->getPersonStyle($person); ?>">
-						<?php print_pedigree_person($person, 2, 0, $personcount++); ?>
+						<?php print_pedigree_person($person, 2); ?>
 					</td>
 					</tr>
 				<?php
@@ -123,7 +117,7 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 		if (!$found && $family->canEdit()) {
 			?>
 			<tr>
-				<td class="facts_label"><?php echo WT_I18N::translate('Add husband'); ?></td>
+				<td class="facts_label">&nbsp;</td>
 				<td class="facts_value"><a href="#" onclick="return add_spouse_to_family('<?php echo $family->getXref(); ?>', 'HUSB');"><?php echo WT_I18N::translate('Add a husband to this family'); ?></a></td>
 			</tr>
 			<?php
@@ -131,13 +125,13 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 
 		///// WIFE /////
 		$found = false;
-		foreach ($family->getFacts('WIFE', $access_level) as $fact) {
+		foreach ($family->getFacts('WIFE', false, $access_level) as $fact) {
 			$person = $fact->getTarget();
 			if ($person instanceof WT_Individual) {
-				$found |= !$fact->isOld();
-				if ($fact->isNew()) {
+				$found |= !$fact->isPendingDeletion();
+				if ($fact->isPendingAddition()) {
 					$class = 'facts_label new';
-				} elseif ($fact->isOld()) {
+				} elseif ($fact->isPendingDeletion()) {
 					$class = 'facts_label old';
 				} else {
 					$class = 'facts_label';
@@ -148,7 +142,7 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 						<?php echo get_close_relationship_name($controller->record, $person); ?>
 					</td>
 					<td class="<?php echo $controller->getPersonStyle($person); ?>">
-						<?php print_pedigree_person($person, 2, 0, $personcount++); ?>
+						<?php print_pedigree_person($person, 2); ?>
 					</td>
 				</tr>
 				<?php
@@ -157,7 +151,7 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 		if (!$found && $family->canEdit()) {
 			?>
 			<tr>
-				<td class="facts_label"><?php echo WT_I18N::translate('Add wife'); ?></td>
+				<td class="facts_label">&nbsp;</td>
 				<td class="facts_value"><a href="#" onclick="return add_spouse_to_family('<?php echo $family->getXref(); ?>', 'WIFE');"><?php echo WT_I18N::translate('Add a wife to this family'); ?></a></td>
 			</tr>
 			<?php
@@ -167,10 +161,10 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 		$found = false;
 		$prev = new WT_Date('');
 		foreach ($family->getFacts(WT_EVENTS_MARR) as $fact) {
-			$found |= !$fact->isOld();
-			if ($fact->isNew()) {
+			$found |= !$fact->isPendingDeletion();
+			if ($fact->isPendingAddition()) {
 				$class = ' new';
-			} elseif ($fact->isOld()) {
+			} elseif ($fact->isPendingDeletion()) {
 				$class = ' old';
 			} else {
 				$class = '';
@@ -181,7 +175,7 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 					&nbsp;
 				</td>
 				<td class="facts_value<?php echo $class; ?>">
-					<?php echo WT_Gedcom_Tag::getLabelValue($fact->getTag(), $fact->getDate()->Display(false) . ' — ' . $fact->getPlace()->getFullName()); ?>
+					<?php echo WT_Gedcom_Tag::getLabelValue($fact->getTag(), $fact->getDate()->display() . ' — ' . $fact->getPlace()->getFullName()); ?>
 				</td>
 			</tr>
 			<?php
@@ -207,22 +201,22 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 
 		///// CHIL /////
 		$child_number = 0;
-		foreach ($family->getFacts('CHIL', $access_level) as $fact) {
+		foreach ($family->getFacts('CHIL', false, $access_level) as $fact) {
 			$person = $fact->getTarget();
 			if ($person instanceof WT_Individual) {
-				if ($fact->isNew()) {
+				if ($fact->isPendingAddition()) {
 					$child_number++;
 					$class = 'facts_label new';
-				} elseif ($fact->isOld()) {
+				} elseif ($fact->isPendingDeletion()) {
 					$class = 'facts_label old';
 				} else {
 					$child_number++;
 					$class = 'facts_label';
 				}
 				$next = new WT_Date('');
-				foreach ($person->getFacts(WT_EVENTS_BIRT) as $fact) {
-					if ($fact->getDate()->isOK()) {
-						$next=$fact->getDate();
+				foreach ($person->getFacts(WT_EVENTS_BIRT) as $bfact) {
+					if ($bfact->getDate()->isOK()) {
+						$next=$bfact->getDate();
 						break;
 					}
 				}
@@ -233,7 +227,7 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 						<?php echo get_close_relationship_name($controller->record, $person); ?>
 					</td>
 					<td class="<?php echo $controller->getPersonStyle($person); ?>">
-						<?php print_pedigree_person($person, 2, 0, $personcount++); ?>
+						<?php print_pedigree_person($person, 2); ?>
 					</td>
 				</tr>
 				<?php
@@ -243,13 +237,9 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 		// Re-order children / add a new child
 		if ($family->canEdit()) {
 			if ($type == 'FAMS') {
-				$child_u = WT_I18N::translate('Add a new son or daughter');
-				$child_m = WT_I18N::translate('son');
-				$child_f = WT_I18N::translate('daughter');
+				$add_child_text = WT_I18N::translate('Add a new son or daughter');
 			} else {
-				$child_u = WT_I18N::translate('Add a new brother or sister');
-				$child_m = WT_I18N::translate('brother');
-				$child_f = WT_I18N::translate('sister');
+				$add_child_text = WT_I18N::translate('Add a new brother or sister');
 			}
 			?>
 			<tr>
@@ -259,7 +249,7 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 					<?php } ?>
 				</td>
 				<td class="facts_value">
-					<a href="#" onclick="return add_child_to_family('<?php echo $family->getXref(); ?>');"><?php echo $child_u; ?></a>
+					<a href="#" onclick="return add_child_to_family('<?php echo $family->getXref(); ?>');"><?php echo $add_child_text; ?></a>
 					<span style='white-space:nowrap;'>
 						<a href="#" class="icon-sex_m_15x15" onclick="return add_child_to_family('<?php echo $family->getXref(); ?>','M');"></a>
 						<a href="#" class="icon-sex_f_15x15" onclick="return add_child_to_family('<?php echo $family->getXref(); ?>','F');"></a>
@@ -274,9 +264,9 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 		return;
 	}
 
-	// Implement WT_Module_Tab
+	/** {@inheritdoc} */
 	public function getTabContent() {
-		global $SHOW_AGE_DIFF, $GEDCOM, $show_full, $personcount, $controller;
+		global $SHOW_AGE_DIFF, $show_full, $controller;
 
 		if (isset($show_full)) $saved_show_full = $show_full; // We always want to see full details here
 		$show_full = 1;
@@ -288,7 +278,6 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 		<label for="checkbox_elder"><?php echo WT_I18N::translate('Show date differences'); ?></label>
 		</td></tr></table>
 		<?php
-		$personcount=0;
 		$families = $controller->record->getChildFamilies();
 		if (!$families && $controller->record->canEdit()) {
 			?>
@@ -384,22 +373,22 @@ class relatives_WT_Module extends WT_Module implements WT_Module_Tab {
 		return '<div id="'.$this->getName().'_content">'.ob_get_clean().'</div>';
 	}
 
-	// Implement WT_Module_Tab
+	/** {@inheritdoc} */
 	public function hasTabContent() {
 		return true;
 	}
-	// Implement WT_Module_Tab
+	/** {@inheritdoc} */
 	public function isGrayedOut() {
 		return false;
 	}
-	// Implement WT_Module_Tab
+	/** {@inheritdoc} */
 	public function canLoadAjax() {
 		global $SEARCH_SPIDER;
 
 		return !$SEARCH_SPIDER; // Search engines cannot use AJAX
 	}
 
-	// Implement WT_Module_Tab
+	/** {@inheritdoc} */
 	public function getPreLoadContent() {
 		return '';
 	}

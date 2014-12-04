@@ -1,8 +1,6 @@
 <?php
-// Controller for the source page
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
@@ -19,17 +17,19 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use WT\Auth;
 
 require_once WT_ROOT.'includes/functions/functions_print_facts.php';
-require_once WT_ROOT.'includes/functions/functions_import.php';
 
+/**
+ * Class WT_Controller_Source - Controller for the source page
+ */
 class WT_Controller_Source extends WT_Controller_GedcomRecord {
+	/**
+	 * Startup activity
+	 */
 	public function __construct() {
 		$xref         = WT_Filter::get('sid', WT_REGEX_XREF);
 		$this->record = WT_Source::getInstance($xref);
@@ -38,12 +38,14 @@ class WT_Controller_Source extends WT_Controller_GedcomRecord {
 	}
 
 	/**
-	* get edit menu
-	*/
+	 * get edit menu
+	 */
 	function getEditMenu() {
-		$SHOW_GEDCOM_RECORD=get_gedcom_setting(WT_GED_ID, 'SHOW_GEDCOM_RECORD');
+		global $WT_TREE;
 
-		if (!$this->record || $this->record->isOld()) {
+		$SHOW_GEDCOM_RECORD = $WT_TREE->getPreference('SHOW_GEDCOM_RECORD');
+
+		if (!$this->record || $this->record->isPendingDeletion()) {
 			return null;
 		}
 
@@ -53,21 +55,27 @@ class WT_Controller_Source extends WT_Controller_GedcomRecord {
 		if (WT_USER_CAN_EDIT) {
 			$fact = $this->record->getFirstFact('TITL');
 			$submenu = new WT_Menu(WT_I18N::translate('Edit source'), '#', 'menu-sour-edit');
-			$submenu->addOnclick('return edit_record(\''.$this->record->getXref().'\', \'' . $fact->getFactId() . '\');');
+			if ($fact) {
+				// Edit existing name
+				$submenu->setOnclick('return edit_record(\''.$this->record->getXref().'\', \'' . $fact->getFactId() . '\');');
+			} else {
+				// Add new name
+				$submenu->setOnclick('return add_fact(\''.$this->record->getXref().'\', \'TITL\');');
+			}
 			$menu->addSubmenu($submenu);
 		}
 
 		// delete
 		if (WT_USER_CAN_EDIT) {
 			$submenu = new WT_Menu(WT_I18N::translate('Delete'), '#', 'menu-sour-del');
-			$submenu->addOnclick("return delete_source('".WT_I18N::translate('Are you sure you want to delete “%s”?', strip_tags($this->record->getFullName()))."', '".$this->record->getXref()."');");
+			$submenu->setOnclick("return delete_source('".WT_I18N::translate('Are you sure you want to delete “%s”?', strip_tags($this->record->getFullName()))."', '".$this->record->getXref()."');");
 			$menu->addSubmenu($submenu);
 		}
 
 		// edit raw
-		if (WT_USER_IS_ADMIN || WT_USER_CAN_EDIT && $SHOW_GEDCOM_RECORD) {
+		if (Auth::isAdmin() || WT_USER_CAN_EDIT && $SHOW_GEDCOM_RECORD) {
 			$submenu = new WT_Menu(WT_I18N::translate('Edit raw GEDCOM'), '#', 'menu-sour-editraw');
-			$submenu->addOnclick("return edit_raw('" . $this->record->getXref() . "');");
+			$submenu->setOnclick("return edit_raw('" . $this->record->getXref() . "');");
 			$menu->addSubmenu($submenu);
 		}
 
@@ -78,15 +86,17 @@ class WT_Controller_Source extends WT_Controller_GedcomRecord {
 				'#',
 				'menu-sour-addfav'
 			);
-			$submenu->addOnclick("jQuery.post('module.php?mod=user_favorites&amp;mod_action=menu-add-favorite',{xref:'".$this->record->getXref()."'},function(){location.reload();})");
+			$submenu->setOnclick("jQuery.post('module.php?mod=user_favorites&amp;mod_action=menu-add-favorite',{xref:'".$this->record->getXref()."'},function(){location.reload();})");
 			$menu->addSubmenu($submenu);
 		}
 
-		//-- get the link for the first submenu and set it as the link for the main menu
-		if (isset($menu->submenus[0])) {
-			$link = $menu->submenus[0]->onclick;
-			$menu->addOnclick($link);
+		// Get the link for the first submenu and set it as the link for the main menu
+		if ($menu->getSubmenus()) {
+			$submenus = $menu->getSubmenus();
+			$menu->setLink($submenus[0]->getLink());
+			$menu->setOnClick($submenus[0]->getOnClick());
 		}
+
 		return $menu;
 	}
 }

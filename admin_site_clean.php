@@ -1,9 +1,9 @@
 <?php
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,48 +17,20 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'admin_site_clean.php');
 require './includes/session.php';
 
-$controller=new WT_Controller_Page();
+$controller = new WT_Controller_Page();
 $controller
-	->requireAdminLogin()
+	->restrictAccess(Auth::isAdmin())
 	->setPageTitle(/* I18N: The “Data folder” is a configuration setting */ WT_I18N::translate('Clean up data folder'))
 	->pageHeader();
 
 require WT_ROOT.'includes/functions/functions_edit.php';
-
-function full_rmdir($dir) {
-	if (!is_writable($dir)) {
-		if (!@chmod($dir, WT_PERM_EXE)) {
-			return false;
-		}
-	}
-
-	$d = dir($dir);
-	while (false !== ($entry = $d->read())) {
-		if ($entry == '.' || $entry == '..') {
-			continue;
-		}
-		$entry = $dir . '/' . $entry;
-		if (is_dir($entry)) {
-			if (!full_rmdir($entry)) {
-				return false;
-			}
-			continue;
-		}
-		if (!@unlink($entry)) {
-			$d->close();
-			return false;
-		}
-	}
-
-	$d->close();
-	rmdir($dir);
-	return TRUE;
-}
 
 // Vars
 $ajaxdeleted = false;
@@ -68,7 +40,7 @@ $locked_by_context = array('index.php', 'config.ini.php');
 // defaultl), then don’t delete it.
 // Need to consider the settings for all gedcoms
 foreach (WT_Tree::getAll() as $tree) {
-	$MEDIA_DIRECTORY=$tree->preference('MEDIA_DIRECTORY');
+	$MEDIA_DIRECTORY=$tree->getPreference('MEDIA_DIRECTORY');
 
 	if (substr($MEDIA_DIRECTORY, 0, 3) !='../') {
 		// Just need to add the first part of the path
@@ -87,11 +59,7 @@ echo
 if (isset($_REQUEST['to_delete'])) {
 	echo '<div class="error">', WT_I18N::translate('Deleted files:'), '</div>';
 	foreach ($_REQUEST['to_delete'] as $k=>$v) {
-		if (is_dir(WT_DATA_DIR.$v)) {
-			full_rmdir(WT_DATA_DIR.$v);
-		} elseif (file_exists(WT_DATA_DIR.$v)) {
-			unlink(WT_DATA_DIR.$v);
-		}
+		WT_File::delete(WT_DATA_DIR.$v);
 		echo '<div class="error">', $v, '</div>';
 	}
 }

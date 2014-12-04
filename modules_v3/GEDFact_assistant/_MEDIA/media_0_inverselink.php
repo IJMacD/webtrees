@@ -4,10 +4,10 @@
 // Media Link information about an individual
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,17 +21,21 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 // GEDFact Media assistant replacement code for inverselink.php: ===========================
 
 //-- extra page parameters and checking
+use WT\Auth;
+
 $more_links  = WT_Filter::get('more_links');
 $exist_links = WT_Filter::get('exist_links');
 $gid         = WT_Filter::get('gid', WT_REGEX_XREF);
 $update_CHAN = WT_Filter::get('preserve_last_changed');
 
-$controller->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js');
+$controller
+	->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+	->addInlineJavascript('autocomplete();');
 
 $paramok =  true;
 if (!empty($linktoid)) $paramok = WT_GedcomRecord::getInstance($linktoid)->canShow();
@@ -41,22 +45,7 @@ if ($action == 'choose' && $paramok) {
 	?>
 	<script>
 	// Javascript variables
-	var id_empty = "<?php echo WT_I18N::translate('When adding a Link, the ID field cannot be empty.'); ?>";
-
-	var pastefield;
-
-	function openerpasteid(id) {
-		window.opener.paste_id(id);
-		window.close();
-	}
-
-	function paste_id(value) {
-		pastefield.value = value;
-	}
-
-	function paste_char(value) {
-		pastefield.value += value;
-	}
+	var id_empty = "<?php echo WT_I18N::translate('When adding a link, the ID field cannot be empty.'); ?>";
 
 	function blankwin() {
 		if (document.getElementById('gid').value == "" || document.getElementById('gid').value.length<=1) {
@@ -136,8 +125,8 @@ if ($action == 'choose' && $paramok) {
 			echo "</td><td>";
 			echo $record->getFullName();
 			echo "</td>";
-			echo "<td align='center'><input alt='", WT_I18N::translate('Keep Link in list'), "', title='", WT_I18N::translate('Keep Link in list'), "' type='radio' id='", $record->getXref(), "_off' name='", $record->getXref(), "' checked></td>";
-			echo "<td align='center'><input alt='", WT_I18N::translate('Remove Link from list'), "', title='", WT_I18N::translate('Remove Link from list'), "' type='radio' id='", $record->getXref(), "_on'  name='", $record->getXref(), "'></td>";
+			echo "<td align='center'><input alt='", WT_I18N::translate('Keep link in list'), "', title='", WT_I18N::translate('Keep link in list'), "' type='radio' id='", $record->getXref(), "_off' name='", $record->getXref(), "' checked></td>";
+			echo "<td align='center'><input alt='", WT_I18N::translate('Remove link from list'), "', title='", WT_I18N::translate('Remove link from list'), "' type='radio' id='", $record->getXref(), "_on'  name='", $record->getXref(), "'></td>";
 
 			if ($record instanceof WT_Individual) {
 				?>
@@ -177,18 +166,17 @@ if ($action == 'choose' && $paramok) {
 		echo '<b>', $record->getFullName(), '</b>';
 	}
 	echo '<table><tr><td>';
-		echo "<input type=\"text\" name=\"gid\" id=\"gid\" size=\"6\" value=\"\">";
-		// echo ' Enter Name or ID &nbsp; &nbsp; &nbsp; <b>OR</b> &nbsp; &nbsp; &nbsp;Search for ID ';
-	echo '</td><td style=" padding-bottom:2px; vertical-align:middle">';
-		echo '&nbsp;';
-		if (isset($WT_IMAGES["add"])) {
-			echo '<img style="border-style:none;" src="', $WT_IMAGES["add"], '" alt="', WT_I18N::translate('Add'), ' " title="', WT_I18N::translate('Add'), '" align="middle" name="addLink" value="" onclick="blankwin(); return false;">';
-			} else {
-			echo '<button name="addLink" value="" type="button" onclick="blankwin(); return false;">', WT_I18N::translate('Add'), '</button>';
-		}
-		echo ' ', print_findindi_link('gid');
-		echo ' ', print_findfamily_link('gid');
-		echo ' ', print_findsource_link('gid');
+	echo '<input type="text" data-autocomplete-type="IFS" name="gid" id="gid" size="6" value="">';
+	echo '</td><td style="padding-bottom: 2px; vertical-align: middle;">';
+	echo '&nbsp;';
+	if (isset($WT_IMAGES["add"])) {
+		echo '<img style="border-style:none;" src="', $WT_IMAGES["add"], '" alt="', WT_I18N::translate('Add'), ' " title="', WT_I18N::translate('Add'), '" align="middle" name="addLink" value="" onclick="blankwin(); return false;">';
+	} else {
+		echo '<button name="addLink" value="" type="button" onclick="blankwin(); return false;">', WT_I18N::translate('Add'), '</button>';
+	}
+	echo ' ', print_findindi_link('gid');
+	echo ' ', print_findfamily_link('gid');
+	echo ' ', print_findsource_link('gid');
 	echo '</td></tr></table>';
 	echo "<sub>" . WT_I18N::translate('Enter or search for the ID of the individual, family, or source to which this media item should be linked.') . "</sub>";
 	echo '<br><br>';
@@ -233,14 +221,11 @@ var hasLoaded = false;
 
 window.onload=fillInRows;
 
-function fillInRows()
-{
+function fillInRows() {
 	hasLoaded = true;
-	//insertRowToTable();
-	//addRowToTable();
 }
 
-// CONFIG:
+// CONFIG
 // myRowObject is an object for storing information about the table rows
 //function myRowObject(zero, one, two, three, four, five, six, seven, eight, nine, ten, cb, ra)
 function myRowObject(zero, one, two, cb, ra)
@@ -270,25 +255,30 @@ function insertRowToTable(pid, nam, head)
 		var numrows = links.rows.length;
 		var strRow = '';
 		for (var i=1; i<numrows; i++) {
-			if (document.all) { // If Internet Explorer
-				strRow += (strRow==''?'':', ') + links.rows[i].cells[1].innerText;
-			} else {
+			if (typeof links.rows[i].cells[1].textContent !== "undefined") {
 				strRow += (strRow==''?'':', ') + links.rows[i].cells[1].textContent;
+			} else {
+				strRow += (strRow==''?'':', ') + links.rows[i].cells[1].innerText;
 			}
 		}
 		strRow += (strRow==''?'':', ');
 
 		//Check if id exists in Links list =================================
 		if (strRow.match(pid+',')!= pid+',') {
-			// alert('NO MATCH');
 		} else {
 			rowToInsertAt = 'EXIST' ;
 		}
 
 		// Check if id exists in "Add links" list ==========================
 		for (var i=0; i<tbl.tBodies[0].rows.length; i++) {
-			if (tbl.tBodies[0].rows[i].myRow.one.textContent==pid) {
-				rowToInsertAt = 'EXIST' ;
+			var cellText;
+			if (typeof tbl.tBodies[0].rows[i].myRow.one.textContent !== "undefined") {
+				cellText = tbl.tBodies[0].rows[i].myRow.one.textContent;
+			} else {
+				cellText = tbl.tBodies[0].rows[i].myRow.one.innerText;
+			}
+			if (cellText==pid) {
+				rowToInsertAt = 'EXIST';
 			} else
 			if (tbl.tBodies[0].rows[i].myRow && tbl.tBodies[0].rows[i].myRow.ra.getAttribute('type') == 'radio' && tbl.tBodies[0].rows[i].myRow.ra.checked) {
 				rowToInsertAt = i;
@@ -311,14 +301,10 @@ function removeHTMLTags(htmlString)
 	if (htmlString) {
 		var mydiv = document.createElement("div");
 			mydiv.innerHTML = htmlString;
-		if (document.all) // IE Stuff
-		{
-			return mydiv.innerText;
-		}
-		else // Mozilla does not work with innerText
-		{
+		if (typeof mydiv.textContent !== "undefined") {
 			return mydiv.textContent;
 		}
+		return mydiv.innerText;
 	}
 }
 
@@ -367,8 +353,11 @@ function addRowToTable(num, pid, nam, head)
 			} else {
 				var txtInp1 = document.createElement('div');
 				txtInp1.setAttribute('type', 'text');
-				txtInp1.innerHTML = pid; // Required for IE
-				txtInp1.textContent = pid;
+				if (typeof txtInp1.textContent !== "undefined") {
+					txtInp1.textContent = pid;
+				} else {
+					txtInp1.innerText = pid;
+				}
 			}
 				txtInp1.setAttribute('id', INPUT_NAME_PREFIX + iteration + '_1');
 				txtInp1.style.background='transparent';
@@ -532,10 +521,10 @@ function parseAddLinks() {
 	var tbl = document.getElementById('addlinkQueue');
 	for (var i=1; i<tbl.rows.length; i++) { // start at i=1 because we need to avoid header
 		var tr = tbl.rows[i];
-		if (document.all) { // If internet explorer
-			str += (str==''?'':',') + tr.cells[1].childNodes[0].innerHTML;
-		} else {
+		if (typeof tr.cells[1].childNodes[0].textContent !== "undefined") {
 			str += (str==''?'':',') + tr.cells[1].childNodes[0].textContent;
+		} else {
+			str += (str==''?'':',') + tr.cells[1].childNodes[0].innerHTML;
 		}
 	}
 	document.link.more_links.value = str;
@@ -580,7 +569,7 @@ function shiftlinks() {
 		</tr>
 		<?php
 		// Admin Option CHAN log update override =======================
-		if (WT_USER_IS_ADMIN) {
+		if (Auth::isAdmin()) {
 			echo "<tr><td class=\"descriptionbox wrap width25\">";
 			echo WT_Gedcom_Tag::getLabel('CHAN'), "</td><td class=\"optionbox wrap\">";
 			if ($NO_UPDATE_CHAN) {

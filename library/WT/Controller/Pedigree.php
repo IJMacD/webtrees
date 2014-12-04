@@ -1,8 +1,6 @@
 <?php
-//	Controller for the pedigree chart
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
@@ -19,13 +17,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * Class WT_Controller_Pedigree - Controller for the pedigree chart
+ */
 class WT_Controller_Pedigree extends WT_Controller_Chart {
 	var $rootid;
 	var $name;
@@ -35,7 +31,7 @@ class WT_Controller_Pedigree extends WT_Controller_Chart {
 	var $PEDIGREE_GENERATIONS;
 	var $pbwidth;
 	var $pbheight;
-	var $treeid;
+	var $ancestors;
 	var $treesize;
 	var $curgen;
 	var $yoffset;
@@ -44,13 +40,16 @@ class WT_Controller_Pedigree extends WT_Controller_Chart {
 	var $offsetarray;
 	var $minyoffset;
 
+	/**
+	 * Create a pedigree controller
+	 */
 	public function __construct() {
 		global $PEDIGREE_FULL_DETAILS, $PEDIGREE_LAYOUT, $MAX_PEDIGREE_GENERATIONS;
 		global $DEFAULT_PEDIGREE_GENERATIONS;
 		global $bwidth, $bheight, $cbwidth, $cbheight, $baseyoffset, $basexoffset, $byspacing, $bxspacing;
 		global $linewidth, $shadowcolor, $shadowblur, $shadowoffsetX, $shadowoffsetY;
 
-		global $BROWSER_TYPE, $show_full, $talloffset;
+		global $show_full, $talloffset;
 
 		parent::__construct();
 
@@ -106,12 +105,12 @@ class WT_Controller_Pedigree extends WT_Controller_Chart {
 		$this->pbwidth = $bwidth+6;
 		$this->pbheight = $bheight+5;
 
-		$this->treeid = ancestry_array($this->rootid);
+		$this->ancestors = $this->sosaAncestors($PEDIGREE_GENERATIONS);
 		$this->treesize = pow(2, (int)($this->PEDIGREE_GENERATIONS))-1;
 
-		//-- ancestry_array puts everyone at $i+1
+		// sosaAncestors() puts everyone at $i+1
 		for ($i=0; $i<$this->treesize; $i++) {
-			$this->treeid[$i] = $this->treeid[$i+1];
+			$this->ancestors[$i] = $this->ancestors[$i+1];
 		}
 
 		if (!$this->show_full) {
@@ -225,32 +224,23 @@ class WT_Controller_Pedigree extends WT_Controller_Chart {
 
 		//-- calculate the smallest yoffset and adjust the tree to that offset
 		$minyoffset = 0;
-		for ($i=0; $i<count($this->treeid); $i++) {
+		for ($i=0; $i<count($this->ancestors); $i++) {
 			if (!empty($offsetarray[$i])) {
 				if (($minyoffset==0)||($minyoffset>$this->offsetarray[$i]["y"]))  $minyoffset = $this->offsetarray[$i]["y"];
 			}
 		}
-
-		$ydiff = $baseyoffset+35-$minyoffset;
-		$this->adjust_subtree(0, $ydiff);
 	}
 
+	/**
+	 * Get the name of the person at the root of the tree.
+	 *
+	 * @return string
+	 */
 	function getPersonName() {
 		if (is_null($this->root)) {
 			return WT_I18N::translate('unknown');
 		} else {
 			return $this->root->getFullName();
 		}
-	}
-
-	function adjust_subtree($index, $diff) {
-		global $offsetarray, $treeid;
-		$f = ($index*2)+1; //-- father index
-		$m = $f+1; //-- mother index
-
-		if (empty($offsetarray[$index])) return;
-		$offsetarray[$index]["y"] += $diff;
-		if ($f<count($treeid)) adjust_subtree($f, $diff);
-		if ($m<count($treeid)) adjust_subtree($m, $diff);
 	}
 }

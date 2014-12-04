@@ -1,8 +1,6 @@
 <?php
-// Classes and libraries for module system
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,12 +14,50 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
+/**
+ * Interface WT_Module_Block - Classes and libraries for module system
+ */
 interface WT_Module_Block {
+	/**
+	 * Generate the HTML content of this block.
+	 * 
+	 * @param integer $block_id
+	 *
+	 * @return string
+	 */
 	public function getBlock($block_id);
+
+	/**
+	 * Should this block load asynchronously using AJAX?
+	 * Simple blocks are faster in-line, more comples ones
+	 * can be loaded later.
+	 *
+	 * @return boolean
+	 */
 	public function loadAjax();
+
+	/**
+	 * Can this block be shown on the user’s home page?
+	 *
+	 * @return boolean
+	 */
 	public function isUserBlock();
+
+	/**
+	 * Can this block be shown on the tree’s home page?
+	 *
+	 * @return boolean
+	 */
 	public function isGedcomBlock();
+
+	/**
+	 * An HTML form to edit block settings
+	 *
+	 * @param integer $block_id
+	 *
+	 * @return void
+	 */
 	public function configureBlock($block_id);
 }

@@ -3,10 +3,10 @@
 // reference this shared note.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,17 +20,17 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'note.php');
 require './includes/session.php';
 require_once WT_ROOT.'includes/functions/functions_print_lists.php';
 
-$controller=new WT_Controller_Note();
+$controller = new WT_Controller_Note();
 
 if ($controller->record && $controller->record->canShow()) {
 	$controller->pageHeader();
-	if ($controller->record->isOld()) {
+	if ($controller->record->isPendingDeletion()) {
 		if (WT_USER_CAN_ACCEPT) {
 			echo
 				'<p class="ui-state-highlight">',
@@ -48,7 +48,7 @@ if ($controller->record && $controller->record->canShow()) {
 				' ', help_link('pending_changes'),
 				'</p>';
 		}
-	} elseif ($controller->record->isNew()) {
+	} elseif ($controller->record->isPendingAddtion()) {
 		if (WT_USER_CAN_ACCEPT) {
 			echo
 				'<p class="ui-state-highlight">',
@@ -74,11 +74,14 @@ if ($controller->record && $controller->record->canShow()) {
 	exit;
 }
 
-$controller
-	->addInlineJavascript('function show_gedcom_record() {var recwin=window.open("gedrecord.php?pid=' . $controller->record->getXref() . '", "_blank", edit_window_specs);}')
-	->addInlineJavascript('function edit_note() {window.open("edit_interface.php?action=editnote&xref=' . $controller->record->getXref() . '", "_blank", edit_window_specs);}')
-	->addInlineJavascript('jQuery("#note-tabs").tabs();')
-	->addInlineJavascript('jQuery("#note-tabs").css("visibility", "visible");');
+$controller->addInlineJavascript('
+	jQuery("#note-tabs")
+		.tabs({
+			create: function(e, ui){
+				jQuery(e.target).css("visibility", "visible");  // prevent FOUC
+			}
+		});
+');
 
 $linked_indi = $controller->record->linkedIndividuals('NOTE');
 $linked_fam  = $controller->record->linkedFamilies('NOTE');
@@ -92,11 +95,11 @@ foreach ($controller->record->getFacts() as $fact) {
 	}
 }
 
-// Check if using census assistant
+// Legacy formatting, created by the census assistant
 if (array_key_exists('GEDFact_assistant', WT_Module::getActiveModules())) {
 	$text = GEDFact_assistant_WT_Module::formatCensusNote($controller->record);
 } else {
-	$text = WT_Filter::expandUrls($controller->record->getNote());
+	$text = WT_Filter::formatText($controller->record->getNote(), $WT_TREE);
 }
 
 ?>
@@ -138,58 +141,50 @@ if (array_key_exists('GEDFact_assistant', WT_Module::getActiveModules())) {
 			</li>
 			<?php } ?>
 		</ul>
-	<div id="note-edit">
-		<table class="facts_table">
-			<tr>
-				<td class="descriptionbox">
-					<?php if (WT_USER_CAN_EDIT) { ?>
-						<a href="#" onclick="edit_note()" title="<?php echo WT_I18N::translate('Edit'); ?>">
-						<i class="icon-note"></i> <?php echo WT_I18N::translate('Shared note'); ?>
-						</a>
-						<div class="editfacts">
-							<div class="editlink">
-							<a class="editicon" href="#" onclick="edit_note()" title="<?php echo WT_I18N::translate('Edit'); ?>">
-								<span class="link_text"><?php echo WT_I18N::translate('Edit'); ?></span>
+		<div id="note-edit">
+			<table class="facts_table">
+				<tr>
+					<td class="descriptionbox">
+						<?php if (WT_USER_CAN_EDIT) { ?>
+							<a href="#" onclick="return edit_note('<?php echo $controller->record->getXref(); ?>')" title="<?php echo WT_I18N::translate('Edit'); ?>">
+							<i class="icon-note"></i> <?php echo WT_I18N::translate('Shared note'); ?>
 							</a>
-						</div>
-					<?php } else { ?>
-					<i class="icon-note"></i>
-						<?php echo WT_I18N::translate('Shared note'); ?>
-					<?php } ?>
-				</td>
-				<td class="optionbox wrap width80" style="white-space: pre-wrap;"><?php echo $text; ?></td>
-			</tr>
-			<?php
-				foreach ($facts as $fact) {
-					print_fact($fact, $controller->record);
-				}
-				if ($controller->record->canEdit()) {
-					print_add_new_fact($controller->record->getXref(), $facts, 'NOTE');
-				}
-			?>
-		</table>
-	</div>
-<?php
-	if ($linked_indi) {
-		echo '<div id="indi-note">';
-		echo format_indi_table($linked_indi, $controller->record->getFullName());
-		echo '</div>';
-	}
-	if ($linked_fam) {
-		echo '<div id="fam-note">';
-		echo format_fam_table($linked_fam, $controller->record->getFullName());
-		echo '</div>';
-	}
-	if ($linked_obje) {
-		echo '<div id="media-note">';
-		echo format_media_table($linked_obje, $controller->record->getFullName());
-		echo '</div>';
-	}
-	if ($linked_sour) {
-		echo '<div id="source-note">';
-		echo format_sour_table($linked_sour, $controller->record->getFullName());
-		echo '</div>';
-	}
-?>
+							<div class="editfacts">
+								<div class="editlink">
+								<a class="editicon" href="#" onclick="return edit_note('<?php echo $controller->record->getXref(); ?>')" title="<?php echo WT_I18N::translate('Edit'); ?>">
+									<span class="link_text"><?php echo WT_I18N::translate('Edit'); ?></span>
+								</a>
+							</div>
+						<?php } else { ?>
+						<i class="icon-note"></i>
+							<?php echo WT_I18N::translate('Shared note'); ?>
+						<?php } ?>
+					</td>
+					<td class="optionbox wrap width80"><?php echo $text; ?></td>
+				</tr>
+				<?php
+					foreach ($facts as $fact) {
+						print_fact($fact, $controller->record);
+					}
+					if ($controller->record->canEdit()) {
+						print_add_new_fact($controller->record->getXref(), $facts, 'NOTE');
+					}
+				?>
+			</table>
+		</div>
+		<?php
+		if ($linked_indi) {
+			echo '<div id="indi-note">', format_indi_table($linked_indi), '</div>';
+		}
+		if ($linked_fam) {
+			echo '<div id="fam-note">', format_fam_table($linked_fam), '</div>';
+		}
+		if ($linked_obje) {
+			echo '<div id="media-note">', format_media_table($linked_obje), '</div>';
+		}
+		if ($linked_sour) {
+			echo '<div id="source-note">', format_sour_table($linked_sour), '</div>';
+		}
+		?>
 	</div>
 </div>

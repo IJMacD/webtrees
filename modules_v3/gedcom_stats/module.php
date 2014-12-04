@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,27 +19,24 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use WT\Auth;
 
 class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		return /* I18N: Name of a module */ WT_I18N::translate('Statistics');
 	}
 
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		return /* I18N: Description of “Statistics” module */ WT_I18N::translate('The size of the family tree, earliest and latest events, common names, etc.');
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function getBlock($block_id, $template=true, $cfg=null) {
-		global $ctype, $top10_block_present;
+		global $WT_TREE, $ctype, $top10_block_present;
 
 		$show_last_update    =get_block_setting($block_id, 'show_last_update',     true);
 		$show_common_surnames=get_block_setting($block_id, 'show_common_surnames', true);
@@ -71,7 +68,7 @@ class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
 
 		$id=$this->getName().$block_id;
 		$class=$this->getName().'_block';
-		if ($ctype=='gedcom' && WT_USER_GEDCOM_ADMIN || $ctype=='user' && WT_USER_ID) {
+		if ($ctype === 'gedcom' && WT_USER_GEDCOM_ADMIN || $ctype === 'user' && Auth::check()) {
 			$title='<i class="icon-admin" title="'.WT_I18N::translate('Configure').'" onclick="modalDialog(\'block_edit.php?block_id='.$block_id.'\', \''.$this->getTitle().'\');"></i>';
 		} else {
 			$title='';
@@ -187,9 +184,9 @@ class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
 		}
 		// NOTE: Print the most common surnames
 		if ($show_common_surnames) {
-			$surnames = get_common_surnames(get_gedcom_setting(WT_GED_ID, 'COMMON_NAMES_THRESHOLD'));
+			$surnames = get_common_surnames($WT_TREE->getPreference('COMMON_NAMES_THRESHOLD'));
 			if (count($surnames)>0) {
-				$content .= '<p><b>'.WT_I18N::translate('Most Common Surnames').'</b></p>';
+				$content .= '<p><b>'.WT_I18N::translate('Most common surnames').'</b></p>';
 				$content .= '<div class="common_surnames">';
 				$i=0;
 				foreach ($surnames as $indexval => $surname) {
@@ -212,22 +209,22 @@ class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
 		}
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function loadAjax() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isUserBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isGedcomBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function configureBlock($block_id) {
 		if (WT_Filter::postBool('save') && WT_Filter::checkCsrf()) {
 			set_block_setting($block_id, 'show_last_update',     WT_Filter::postBool('show_last_update'));
@@ -249,7 +246,6 @@ class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
 			set_block_setting($block_id, 'stat_avg_life',        WT_Filter::postBool('stat_avg_life'));
 			set_block_setting($block_id, 'stat_most_chil',       WT_Filter::postBool('stat_most_chil'));
 			set_block_setting($block_id, 'stat_avg_chil',        WT_Filter::postBool('stat_avg_chil'));
-			set_block_setting($block_id, 'stat_link',            WT_Filter::postBool('stat_link'));
 			exit;
 		}
 
@@ -286,7 +282,6 @@ class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
 		$stat_avg_life       =get_block_setting($block_id, 'stat_avg_life',        true);
 		$stat_most_chil      =get_block_setting($block_id, 'stat_most_chil',       true);
 		$stat_avg_chil       =get_block_setting($block_id, 'stat_avg_chil',        true);
-		$stat_link           =get_block_setting($block_id, 'stat_link',            true);
 ?>
 	<tr>
 	<td class="descriptionbox wrap width33"><?php echo WT_I18N::translate('Select the stats to show in this block'); ?></td>
@@ -366,11 +361,5 @@ class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
 	</td>
 	</tr>
 	<?php
-		$stat_link=get_block_setting($block_id, 'stat_link', true);
-		echo '<tr><td class="descriptionbox wrap width33">';
-		echo WT_I18N::translate('Show link to Statistics charts?');
-		echo '</td><td class="optionbox">';
-		echo edit_field_yes_no('stat_link', $stat_link);
-		echo '</td></tr>';
 	}
 }

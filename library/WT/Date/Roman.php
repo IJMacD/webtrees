@@ -1,17 +1,6 @@
 <?php
-// Classes for Gedcom Date/Calendar functionality.
-//
-// Definitions for the Roman calendar
-// TODO The 5.5.1 gedcom spec mentions this calendar, but gives no details of
-// how it is to be represented....  This class is just a place holder so that
-// webtrees won’t compain if it receives one.
-//
-// NOTE: Since different calendars start their days at different times, (civil
-// midnight, solar midnight, sunset, sunrise, etc.), we convert on the basis of
-// midday.
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 Greg Roach
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,21 +14,29 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * Class WT_Date_Roman - Definitions for the Roman calendar
+ *
+ * The 5.5.1 gedcom spec mentions this calendar, but gives no details of
+ * how it is to be represented....  This class is just a place holder so that
+ * webtrees won’t compain if it receives one.
+ */
 class WT_Date_Roman extends WT_Date_Calendar {
 	const CALENDAR_ESCAPE = '@#DROMAN@';
 
-	protected function FormatGedcomYear() {
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function formatGedcomYear() {
 		return sprintf('%04dAUC', $this->y);
 	}
 
-	protected function FormatLongYear() {
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function formatLongYear() {
 		return $this->y . 'AUC';
 	}
 }

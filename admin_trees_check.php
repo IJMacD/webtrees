@@ -1,14 +1,8 @@
 <?php
 // Check a family tree for structural errors.
 //
-// Note that the tests and error messages are not yet finalised.  Wait until the code has stabilised before
-// adding I18N.
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
-//
-// Derived from PhpGedView
-// Copyright (C) 2006-2009 Greg Roach, all rights reserved
+// Copyright (C) 2014 Greg Roach
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,15 +16,17 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'admin_trees_check.php');
 require './includes/session.php';
 require WT_ROOT.'includes/functions/functions_edit.php';
 
-$controller=new WT_Controller_Page();
+$controller = new WT_Controller_Page();
 $controller
-	->requireManagerLogin()
+	->restrictAccess(Auth::isManager())
 	->setPageTitle(WT_I18N::translate('Check for errors'))
 	->pageHeader();
 
@@ -67,7 +63,7 @@ foreach ($rows as $row) {
 // Need to merge pending new/changed/deleted records
 
 $rows=WT_DB::prepare(
-	" SELECT xref, SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(CASE WHEN old_gedcom='' THEN new_gedcom ELSE old_gedcom END, '\n', 1), ' ', 3), ' ', -1) AS type, new_gedcom AS gedrec".
+	"SELECT xref, SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(CASE WHEN old_gedcom='' THEN new_gedcom ELSE old_gedcom END, '\n', 1), ' ', 3), ' ', -1) AS type, new_gedcom AS gedrec".
 	" FROM (".
 	"  SELECT MAX(change_id) AS change_id".
 	"  FROM `##change`".
@@ -113,17 +109,19 @@ $XREF_LINKS=array(
 	'ANCI'          => 'SUBM',
 	'DESI'          => 'SUBM',
 	'_WT_OBJE_SORT' => 'OBJE',
+	'_LOC'          => '_LOC',
 );
 
 $RECORD_LINKS=array(
-	'INDI'=>array('NOTE', 'OBJE', 'SOUR', 'SUBM', 'ASSO', '_ASSO', 'FAMC', 'FAMS', 'ALIA', '_WT_OBJE_SORT'),
-	'FAM' =>array('NOTE', 'OBJE', 'SOUR', 'SUBM', 'ASSO', '_ASSO', 'HUSB', 'WIFE', 'CHIL'),
+	'INDI'=>array('NOTE', 'OBJE', 'SOUR', 'SUBM', 'ASSO', '_ASSO', 'FAMC', 'FAMS', 'ALIA', '_WT_OBJE_SORT', '_LOC'),
+	'FAM' =>array('NOTE', 'OBJE', 'SOUR', 'SUBM', 'ASSO', '_ASSO', 'HUSB', 'WIFE', 'CHIL', '_LOC'),
 	'SOUR'=>array('NOTE', 'OBJE', 'REPO', 'AUTH'),
 	'REPO'=>array('NOTE'),
 	'OBJE'=>array('NOTE'), // The spec also allows SOUR, but we treat this as a warning
 	'NOTE'=>array(), // The spec also allows SOUR, but we treat this as a warning
 	'SUBM'=>array('NOTE', 'OBJE'),
 	'SUBN'=>array('SUBM'),
+	'_LOC'=>array('SOUR', 'OBJE', '_LOC'),
 );
 
 $errors=false;
@@ -154,19 +152,19 @@ foreach ($all_links as $xref1=>$links) {
 			if (array_key_exists(strtoupper($xref2), $upper_links)) {
 				echo warning(
 					link_message($type1, $xref1, $type2, $xref2).' '.
-					/* I18N: placeholders are GEDCOM IDs, such as R123 */ WT_I18N::translate('%1$s does not exist.  Did you mean %2$s?', format_link($xref2), format_link($upper_links[strtoupper($xref2)]))
+					/* I18N: placeholders are GEDCOM XREFs, such as R123 */ WT_I18N::translate('%1$s does not exist.  Did you mean %2$s?', format_link($xref2), format_link($upper_links[strtoupper($xref2)]))
 				);
 			} else {
 				echo error(
 					link_message(
 						$type1, $xref1, $type2, $xref2).' '.
-						/* I18N: placeholders are GEDCOM IDs, such as R123 */ WT_I18N::translate('%1$s does not exist.', format_link($xref2))
+						/* I18N: placeholders are GEDCOM XREFs, such as R123 */ WT_I18N::translate('%1$s does not exist.', format_link($xref2))
 				);
 			}
 		} elseif ($type2=='SOUR' && $type1=='NOTE') {
-			//echo warning(WT_I18N::translate('The note %1$s has a source %2$s. Notes are intended to add explanations and comments to other records.  They should not have their own sources.'), format_link($xref1), format_link($xref2));
+			// Notes are intended to add explanations and comments to other records.  They should not have their own sources.
 		} elseif ($type2=='SOUR' && $type1=='OBJE') {
-			//echo warning(WT_I18N::translate('The media object %1$s has a source %2$s. Media objects are intended to illustrate other records, facts, and source/citations.  They should not have their own sources.', format_link($xref1), format_link($xref2)));
+			// Media objects are intended to illustrate other records, facts, and source/citations.  They should not have their own sources.
 		} elseif ($type2=='OBJE' && $type1=='REPO') {
 			echo warning(
 				link_message($type1, $xref1, $type2, $xref2) . ' ' .  WT_I18N::translate('This type of link is not allowed here.')
@@ -199,7 +197,7 @@ foreach ($all_links as $xref1=>$links) {
 
 function link_message($type1, $xref1, $type2, $xref2) {
 	return
-		/* I18N: The placeholders are GEDCOM identifiers and tags.  e.g. “INDI I123 contains a FAMC link to F234.” */ WT_I18N::translate(
+		/* I18N: The placeholders are GEDCOM XREFs and tags.  e.g. “INDI I123 contains a FAMC link to F234.” */ WT_I18N::translate(
 			'%1$s %2$s has a %3$s link to %4$s.',
 			format_type($type1),
 			format_link($xref1),

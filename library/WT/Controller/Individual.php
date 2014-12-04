@@ -1,8 +1,6 @@
 <?php
-// Controller for the individual page
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2002 to 2010 PGV Development Team. All rights reserved.
@@ -19,22 +17,25 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use WT\Auth;
+use WT\User;
 
 require_once WT_ROOT.'includes/functions/functions_print_facts.php';
-require_once WT_ROOT.'includes/functions/functions_import.php';
 
+/**
+ * Class WT_Controller_Individual - Controller for the individual page
+ */
 class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 	public $name_count = 0;
 	public $total_names = 0;
 
 	public $tabs;
 
+	/**
+	 * Startup activity
+	 */
 	function __construct() {
 		global $USE_RIN;
 
@@ -56,14 +57,25 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 		}
 	}
 
-	// Get significant information from this page, to allow other pages such as
-	// charts and reports to initialise with the same records
+	/**
+	 * Get significant information from this page, to allow other pages such as
+	 * charts and reports to initialise with the same records
+	 *
+	 * @return WT_Individual
+	 */
 	public function getSignificantIndividual() {
 		if ($this->record) {
 			return $this->record;
 		}
 		return parent::getSignificantIndividual();
 	}
+
+	/**
+	 * Get significant information from this page, to allow other pages such as
+	 * charts and reports to initialise with the same records
+	 *
+	 * @return WT_Family
+	 */
 	public function getSignificantFamily() {
 		if ($this->record) {
 			foreach ($this->record->getChildFamilies() as $family) {
@@ -76,7 +88,9 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 		return parent::getSignificantFamily();
 	}
 
-	// Handle AJAX requests - to generate the tab content
+	/**
+	 * Handle AJAX requests - to generate the tab content
+	 */
 	public function ajaxRequest() {
 		global $SEARCH_SPIDER;
 
@@ -110,13 +124,12 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 	}
 
 	/**
-	* print information for a name record
-	*
-	* Called from the individual information page
-	* @see individual.php
-	* @param Event $event the event object
-	*/
-	function print_name_record(WT_Fact $event) {
+	 * print information for a name record
+	 *
+	 * @param WT_Fact $event the event object
+	 */
+	public function printNameRecord(WT_Fact $event) {
+		global $WT_TREE;
 
 		$factrec = $event->getGedcom();
 
@@ -133,10 +146,10 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 		$this->name_count++;
 		if ($this->name_count >1) { echo '<h3 class="name_two">',$dummy->getFullName(), '</h3>'; } //Other names accordion element
 		echo '<div class="indi_name_details';
-		if ($event->isOld()) {
+		if ($event->isPendingDeletion()) {
 			echo ' old';
 		}
-		if ($event->isNew()) {
+		if ($event->isPendingAddition()) {
 			echo ' new';
 		}
 		echo '">';
@@ -146,16 +159,15 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 		$dummy->setPrimaryName(0);
 		echo '<dd class="field">', $dummy->getFullName();
 		if ($this->name_count == 1) {
-			if (WT_USER_IS_ADMIN) {
-				$user_id=get_user_from_gedcom_xref(WT_GED_ID, $this->record->getXref());
-				if ($user_id) {
-					$user_name=get_user_name($user_id);
-					echo '<span> - <a class="warning" href="admin_users.php?filter='.$user_name.'">'.$user_name.'</a></span>';
+			if (Auth::isAdmin()) {
+				$user = User::findByGenealogyRecord($WT_TREE, $this->record);
+				if ($user) {
+					echo '<span> - <a class="warning" href="admin_users.php?filter=' . WT_Filter::escapeHtml($user->getUserName()) . '">' . WT_Filter::escapeHtml($user->getUserName()) . '</a></span>';
 				}
 			}
 		}
-		if ($this->record->canEdit() && !$event->isOld()) {
-			echo "<div class=\"deletelink\"><a class=\"deleteicon\" href=\"#\" onclick=\"return delete_fact('".WT_I18N::translate('Are you sure you want to delete this fact?')."', '".$this->record->getXref()."', '".$event->getFactId()."');\" title=\"".WT_I18N::translate('Delete name')."\"><span class=\"link_text\">".WT_I18N::translate('Delete name')."</span></a></div>";
+		if ($this->record->canEdit() && !$event->isPendingDeletion()) {
+			echo "<div class=\"deletelink\"><a class=\"deleteicon\" href=\"#\" onclick=\"return delete_fact('".WT_I18N::translate('Are you sure you want to delete this fact?')."', '".$this->record->getXref()."', '".$event->getFactId()."');\" title=\"".WT_I18N::translate('Delete this name')."\"><span class=\"link_text\">".WT_I18N::translate('Delete this name')."</span></a></div>";
 			echo "<div class=\"editlink\"><a href=\"#\" class=\"editicon\" onclick=\"edit_name('".$this->record->getXref()."', '".$event->getFactId()."'); return false;\" title=\"".WT_I18N::translate('Edit name')."\"><span class=\"link_text\">".WT_I18N::translate('Edit name')."</span></a></div>";
 		}
 		echo '</dd>';
@@ -179,14 +191,15 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 							case 'SURN':
 								// The SURN field is not necessarily the surname.
 								// Where it is not a substring of the real surname, show it after the real surname.
-								if (strpos($primary_name['surname'], str_replace(',', ' ', $name))!==false) {
-									echo $primary_name['surname'];
+								$surname = WT_Filter::escapeHtml($primary_name['surname']);
+								if (strpos($primary_name['surname'], str_replace(',', ' ', $nmatch[$i][2]))!==false) {
+									echo '<span dir="auto">' . $surname . '</span>';
 								} else {
-									echo WT_I18N::translate('%1$s (%2$s)', $primary_name['surname'], $name);
+									echo WT_I18N::translate('%1$s (%2$s)', '<span dir="auto">' . $surname . '</span>', '<span dir="auto">' . $name . '</span>');
 								}
 								break;
 							default:
-								echo $name;
+								echo '<span dir="auto">' . $name . '</span>';
 								break;
 							}
 						}
@@ -205,20 +218,18 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 	}
 
 	/**
-	* print information for a sex record
-	*
-	* Called from the individual information page
-	* @see individual.php
-	* @param Event $event the Event object
-	*/
-	function print_sex_record(WT_Fact $event) {
+	 * print information for a sex record
+	 *
+	 * @param WT_Fact $event the Event object
+	 */
+	public function printSexRecord(WT_Fact $event) {
 		$sex = $event->getValue();
 		if (empty($sex)) $sex = 'U';
 		echo '<span id="sex" class="';
-		if ($event->isOld()) {
+		if ($event->isPendingDeletion()) {
 			echo 'old ';
 		}
-		if ($event->isNew()) {
+		if ($event->isPendingAddition()) {
 			echo 'new ';
 		}
 		switch ($sex) {
@@ -253,51 +264,51 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 		echo '</span>';
 	}
 	/**
-	* get edit menu
-	*/
+	 * get edit menu
+	 */
 	function getEditMenu() {
-		$SHOW_GEDCOM_RECORD=get_gedcom_setting(WT_GED_ID, 'SHOW_GEDCOM_RECORD');
+		global $WT_TREE;
 
-		if (!$this->record || $this->record->isOld()) {
+		$SHOW_GEDCOM_RECORD = $WT_TREE->getPreference('SHOW_GEDCOM_RECORD');
+
+		if (!$this->record || $this->record->isPendingDeletion()) {
 			return null;
 		}
 		// edit menu
 		$menu = new WT_Menu(WT_I18N::translate('Edit'), '#', 'menu-indi');
-		$menu->iconclass = "fa fa-edit";
-		$menu->addLabel($menu->label, 'down');
 
 		// What behaviour shall we give the main menu?  If we leave it blank, the framework
 		// will copy the first submenu - which may be edit-raw or delete.
 		// As a temporary solution, make it edit the name
-		$menu->addOnclick("return false;");
+		$menu->setOnclick("return false;");
 		if (WT_USER_CAN_EDIT) {
 			foreach ($this->record->getFacts() as $fact) {
 				if ($fact->getTag()=='NAME' && $fact->canEdit())
-					$menu->addOnclick("return edit_name('".$this->record->getXref() . "', '" . $fact->getFactId() . "');");
+					$menu->setOnclick("return edit_name('".$this->record->getXref() . "', '" . $fact->getFactId() . "');");
 					break;
 			}
 
 			$submenu = new WT_Menu(WT_I18N::translate('Add a new name'), '#', 'menu-indi-addname');
-			$submenu->addOnclick("return add_name('".$this->record->getXref()."');");
+			$submenu->setOnclick("return add_name('".$this->record->getXref()."');");
 			$menu->addSubmenu($submenu);
 
 			$has_sex_record = false;
 			$submenu = new WT_Menu(WT_I18N::translate('Edit gender'), '#', 'menu-indi-editsex');
 			foreach ($this->record->getFacts() as $fact) {
 				if ($fact->getTag()=='SEX' && $fact->canEdit()) {
-					$submenu->addOnclick("return edit_record('" . $this->record->getXref() . "', '" . $fact->getFactId() . "');");
+					$submenu->setOnclick("return edit_record('" . $this->record->getXref() . "', '" . $fact->getFactId() . "');");
 					$has_sex_record = true;
 					break;
 				}
 			}
 			if (!$has_sex_record) {
-				$submenu->addOnclick("return add_new_record('" . $this->record->getXref() . "', 'SEX');");
+				$submenu->setOnclick("return add_new_record('" . $this->record->getXref() . "', 'SEX');");
 			}
 			$menu->addSubmenu($submenu);
 
 			if (count($this->record->getSpouseFamilies())>1) {
 				$submenu = new WT_Menu(WT_I18N::translate('Re-order families'), '#', 'menu-indi-orderfam');
-				$submenu->addOnclick("return reorder_families('".$this->record->getXref()."');");
+				$submenu->setOnclick("return reorder_families('".$this->record->getXref()."');");
 				$menu->addSubmenu($submenu);
 			}
 		}
@@ -305,14 +316,14 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 		// delete
 		if (WT_USER_CAN_EDIT) {
 			$submenu = new WT_Menu(WT_I18N::translate('Delete'), '#', 'menu-indi-del');
-			$submenu->addOnclick("return delete_individual('".WT_I18N::translate('Are you sure you want to delete “%s”?', WT_Filter::escapeJs(strip_tags($this->record->getFullName())))."', '".$this->record->getXref()."');");
+			$submenu->setOnclick("return delete_individual('".WT_I18N::translate('Are you sure you want to delete “%s”?', WT_Filter::escapeJs(strip_tags($this->record->getFullName())))."', '".$this->record->getXref()."');");
 			$menu->addSubmenu($submenu);
 		}
 
 		// edit raw
-		if (WT_USER_IS_ADMIN || WT_USER_CAN_EDIT && $SHOW_GEDCOM_RECORD) {
+		if (Auth::isAdmin() || WT_USER_CAN_EDIT && $SHOW_GEDCOM_RECORD) {
 			$submenu = new WT_Menu(WT_I18N::translate('Edit raw GEDCOM'), '#', 'menu-indi-editraw');
-			$submenu->addOnclick("return edit_raw('" . $this->record->getXref() . "');");
+			$submenu->setOnclick("return edit_raw('" . $this->record->getXref() . "');");
 			$menu->addSubmenu($submenu);
 		}
 
@@ -323,7 +334,7 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 				'#',
 				'menu-indi-addfav'
 			);
-			$submenu->addOnclick("jQuery.post('module.php?mod=user_favorites&amp;mod_action=menu-add-favorite',{xref:'".$this->record->getXref()."'},function(){location.reload();})");
+			$submenu->setOnclick("jQuery.post('module.php?mod=user_favorites&amp;mod_action=menu-add-favorite',{xref:'".$this->record->getXref()."'},function(){location.reload();})");
 			$menu->addSubmenu($submenu);
 		}
 
@@ -331,11 +342,12 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 	}
 
 	/**
-	* get the person box stylesheet class
-	* for the given person
-	* @param Person $person
-	* @return string returns 'person_box', 'person_boxF', or 'person_boxNN'
-	*/
+	 * get the person box stylesheet class for the given person
+	 *
+	 * @param WT_Individual $person
+	 *
+	 * @return string returns 'person_box', 'person_boxF', or 'person_boxNN'
+	 */
 	function getPersonStyle($person) {
 		switch($person->getSex()) {
 			case 'M':
@@ -348,27 +360,34 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 				$class = 'person_boxNN';
 				break;
 		}
-		if ($person->isOld()) {
+		if ($person->isPendingDeletion()) {
 			$class .= ' old';
-		} elseif ($person->isNew()) {
+		} elseif ($person->isPendingAddtion()) {
 			$class .= ' new';
 		}
 		return $class;
 	}
 
-	// Get significant information from this page, to allow other pages such as
-	// charts and reports to initialise with the same records
+	/**
+	 * Get significant information from this page, to allow other pages such as
+	 * charts and reports to initialise with the same records
+	 *
+	 * @return string
+	 */
 	public function getSignificantSurname() {
 		if ($this->record) {
-			list($surn, $givn)=explode(',', $this->record->getSortname());
+			list($surn) = explode(',', $this->record->getSortname());
 			return $surn;
 		} else {
 			return '';
 		}
 	}
 
-	// Get the contents of sidebar.
-	// TODO?? - only load one block immediately - load the others by AJAX.
+	/**
+	 * Get the contents of sidebar.
+	 *
+	 * @return string
+	 */
 	public function getSideBarContent() {
 		global $controller;
 
@@ -387,16 +406,19 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 			}
 		}
 
-		$controller
-			->addInlineJavascript('
+		if ($html) {
+			$controller
+				->addInlineJavascript('
 				jQuery("#sidebarAccordion").accordion({
 					active:' . $active . ',
 					heightStyle: "content",
 					collapsible: true,
-					icons:{ "header": "ui-icon-triangle-1-s", "headerSelected": "ui-icon-triangle-1-n" }
 				});
 			');
 
-		return '<div id="wt_sidebar"><div id="sidebarAccordion">'.$html.'</div></div>';
+			return '<div id="sidebar"><div id="sidebarAccordion">' . $html . '</div></div>';
+		} else {
+			return '';
+
 	}
 }

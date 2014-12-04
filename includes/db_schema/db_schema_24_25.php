@@ -10,7 +10,7 @@
 // seconds, for systems with low timeout values.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 Greg Roach
+// Copyright (C) 2014 Greg Roach
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,15 +24,10 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 // Tree settings become site settings
-self::exec(
+WT_DB::exec(
 	"INSERT IGNORE INTO `##site_setting` (setting_name, setting_value)" .
 	" SELECT setting_name, setting_value" .
 	" FROM `##gedcom_setting`" .
@@ -40,13 +35,13 @@ self::exec(
 	" GROUP BY setting_name"
 );
 
-self::exec(
+WT_DB::exec(
 	"DELETE FROM `##gedcom_setting` WHERE setting_name IN ('ALLOW_EDIT_GEDCOM', 'SHOW_REGISTER_CAUTION', 'WELCOME_TEXT_CUST_HEAD') OR setting_name like 'WELCOME_TEXT_AUTH_MODE%'"
 );
 
-self::exec(
+WT_DB::exec(
 	"DELETE FROM `##site_setting` WHERE setting_name IN ('STORE_MESSAGES')"
 );
 
 // Update the version to indicate success
-WT_Site::preference($schema_name, $next_version);
+WT_Site::setPreference($schema_name, $next_version);

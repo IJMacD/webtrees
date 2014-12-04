@@ -3,10 +3,10 @@
 // used by the SAX parser to generate PDF reports from the XML report file.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
@@ -34,30 +34,27 @@ if (!defined('WT_WEBTREES')) {
  * @global array $elementHandler
  */
 $elementHandler = array();
-$elementHandler["Report"]["start"]   ="ReportSHandler";
-$elementHandler["var"]["start"]      ="varSHandler";
-$elementHandler["Title"]["start"]    ="TitleSHandler";
-$elementHandler["Title"]["end"]      ="TitleEHandler";
-$elementHandler["Description"]["end"]="DescriptionEHandler";
-$elementHandler["Input"]["start"]    ="InputSHandler";
-$elementHandler["Input"]["end"]      ="InputEHandler";
+$elementHandler["Report"]["start"]   ="reportStartHandler";
+$elementHandler["var"]["start"]      ="varStartHandler";
+$elementHandler["Title"]["start"]    ="titleStartHandler";
+$elementHandler["Title"]["end"]      ="titleEndHandler";
+$elementHandler["Description"]["end"]="descriptionEndHandler";
+$elementHandler["Input"]["start"]    ="inputStartHandler";
+$elementHandler["Input"]["end"]      ="inputEndHandler";
 
 $text = "";
 $report_array = array();
-
-
 
 /**
  * xml start element handler
  *
  * this function is called whenever a starting element is reached
+
  * @param resource $parser the resource handler for the xml parser
- * @param string $name the name of the xml element parsed
- * @param array $attrs an array of key value pairs for the attributes
+ * @param string   $name the name of the xml element parsed
+ * @param string[] $attrs an array of key value pairs for the attributes
  */
 function startElement($parser, $name, $attrs) {
-// @deprecated
-// global $elementHandler, $processIfs, $processGedcoms, $processRepeats;
 	global $elementHandler, $processIfs;
 
 	if (($processIfs==0) || ($name=="if")) {
@@ -75,8 +72,6 @@ function startElement($parser, $name, $attrs) {
  * @param string $name the name of the xml element parsed
  */
 function endElement($parser, $name) {
-	// @deprecated
-	// global $elementHandler, $processIfs, $processGedcoms, $processRepeats;
 	global $elementHandler, $processIfs;
 
 	if (($processIfs==0) || ($name=="if")) {
@@ -100,7 +95,10 @@ function characterData($parser, $data) {
 	$text .= $data;
 }
 
-function ReportSHandler($attrs) {
+/**
+ * @param string[] $attrs
+ */
+function reportStartHandler($attrs) {
 	global $report_array;
 
 	$access = WT_PRIV_PUBLIC;
@@ -118,47 +116,54 @@ function ReportSHandler($attrs) {
 	}
 }
 
-function varSHandler($attrs) {
-	global $text, $vars, $fact, $desc, $type, $generation;
+/**
+ * @param string[] $attrs
+ */
+function varStartHandler($attrs) {
+	global $text, $fact, $desc, $type;
 
 	$var = $attrs["var"];
 	if (!empty($var)) {
-		$match = array();
 		$tfact = $fact;
 		if ($fact=="EVEN") {
 			$tfact = $type;
 		}
 		$var = str_replace(array("@fact", "@desc"), array($tfact, $desc), $var);
-		if (substr($var, 0, 18)=='WT_I18N::translate' || substr($var, 0, 23)=='WT_Gedcom_Tag::getLabel') {
-			eval("\$var=$var;");
+		if (preg_match('/^WT_I18N::number\((.+)\)$/', $var, $match)) {
+			$var = WT_I18N::number($match[1]);
+		} elseif (preg_match('/^WT_I18N::translate\(\'(.+)\'\)$/', $var, $match)) {
+			$var = WT_I18N::translate($match[1]);
+		} elseif (preg_match('/^WT_I18N::translate_c\(\'(.+)\', *\'(.+)\'\)$/', $var, $match)) {
+			$var = WT_I18N::translate_c($match[1], $match[2]);
 		}
 		$text .= $var;
 	}
 }
 
-function TitleSHandler() {
-	// @deprecated
-	// global $report_array, $text;
+function titleStartHandler() {
 	global $text;
 
 	$text = "";
 }
 
-function TitleEHandler() {
+function titleEndHandler() {
 	global $report_array, $text;
 
 	$report_array["title"] = $text;
 	$text = "";
 }
 
-function DescriptionEHandler() {
+function descriptionEndHandler() {
 	global $report_array, $text;
 
 	$report_array["description"] = $text;
 	$text = "";
 }
 
-function InputSHandler($attrs) {
+/**
+ * @param string[] $attrs
+ */
+function inputStartHandler($attrs) {
 	global $input, $text;
 
 	$text ="";
@@ -199,7 +204,7 @@ function InputSHandler($attrs) {
 	}
 }
 
-function InputEHandler() {
+function inputEndHandler() {
 	global $report_array, $text, $input;
 
 	$input["value"] = $text;

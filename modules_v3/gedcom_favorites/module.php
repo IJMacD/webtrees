@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,27 +19,25 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use Rhumsaa\Uuid\Uuid;
+use WT\Auth;
 
 // Note that the user favorites module simply extends this module, so ensure that the
 // logic works for both.
 class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		return /* I18N: Name of a module */ WT_I18N::translate('Favorites');
 	}
 
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		return /* I18N: Description of the “Favorites” module */ WT_I18N::translate('Display and manage a family tree’s favorite pages.');
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function getBlock($block_id, $template=true, $cfg=null) {
 		global $ctype, $show_full, $PEDIGREE_FULL_DETAILS, $controller;
 
@@ -52,7 +50,6 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 			if ($favorite_id) {
 				self::deleteFavorite($favorite_id);
 			}
-			unset($_GET['action']);
 			break;
 		case 'addfav':
 			$gid      = WT_Filter::get('gid', WT_REGEX_XREF);
@@ -64,7 +61,7 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 				$record = WT_GedcomRecord::getInstance($gid);
 				if ($record && $record->canShow()) {
 					self::addFavorite(array(
-						'user_id'   => $ctype=='user' ? WT_USER_ID : null,
+						'user_id'   => $ctype === 'user' ? Auth::id() : null,
 						'gedcom_id' => WT_GED_ID,
 						'gid'       => $record->getXref(),
 						'type'      => $record::RECORD_TYPE,
@@ -75,7 +72,7 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 				}
 			} elseif ($url) {
 				self::addFavorite(array(
-					'user_id'   => $ctype=='user' ? WT_USER_ID : null,
+					'user_id'   => $ctype === 'user' ? Auth::id() : null,
 					'gedcom_id' => WT_GED_ID,
 					'gid'       => null,
 					'type'      => 'URL',
@@ -84,15 +81,14 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 					'title'     => $favtitle ? $favtitle : $url,
 				));
 			}
-			unset($_GET['action']);
 			break;
 		}
 
-		$block=get_block_setting($block_id, 'block', false);
+		$block = get_block_setting($block_id, 'block', false);
 		if ($cfg) {
 			foreach (array('block') as $name) {
 				if (array_key_exists($name, $cfg)) {
-					$$name=$cfg[$name];
+					$$name = $cfg[$name];
 				}
 			}
 		}
@@ -103,16 +99,19 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 		$show_full = 1;
 		$PEDIGREE_FULL_DETAILS = 1;
 
-		$userfavs = $this->getFavorites($ctype=='user' ? WT_USER_ID : WT_GED_ID);
-		if (!is_array($userfavs)) $userfavs = array();
+		$userfavs = $this->getFavorites($ctype === 'user' ? Auth::id() : WT_GED_ID);
+		if (!is_array($userfavs)) {
+			$userfavs = array();
+		}
 
 		$id=$this->getName().$block_id;
 		$class=$this->getName().'_block';
 		$title=$this->getTitle();
 
-		if (WT_USER_ID) {
+		if (Auth::check()) {
 			$controller
-				->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js');
+				->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+				->addInlineJavascript('autocomplete();');
 		}
 
 		$content = '';
@@ -120,7 +119,7 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 		if ($userfavs) {
 			foreach ($userfavs as $key=>$favorite) {
 				if (isset($favorite['id'])) $key=$favorite['id'];
-				$removeFavourite = '<a class="font9" href="index.php?ctype='.$ctype.'&amp;action=deletefav&amp;favorite_id='.$key.'" onclick="return confirm(\''.WT_I18N::translate('Are you sure you want to remove this item from your list of Favorites?').'\');">'.WT_I18N::translate('Remove').'</a> ';
+				$removeFavourite = '<a class="font9" href="index.php?ctype='.$ctype.'&amp;action=deletefav&amp;favorite_id='.$key.'" onclick="return confirm(\''.WT_I18N::translate('Are you sure you want to remove this item from your list of favorites?').'\');">'.WT_I18N::translate('Remove').'</a> ';
 				if ($favorite['type']=='URL') {
 					$content .= '<div id="boxurl'.$key.'.0" class="person_box">';
 					if ($ctype=='user' || WT_USER_GEDCOM_ADMIN) $content .= $removeFavourite;
@@ -132,20 +131,20 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 					if ($record && $record->canShow()) {
 						if ($record instanceof WT_Individual) {
 							$content .= '<div id="box'.$favorite["gid"].'.0" class="person_box action_header';
-							switch($record->getsex()) {
-								case 'M':
-									break;
-								case 'F':
-									$content.='F';
-									break;
-								case 'U':
-									$content.='NN';
-									break;
+							switch ($record->getsex()) {
+							case 'M':
+								break;
+							case 'F':
+								$content .= 'F';
+								break;
+							default:
+								$content .= 'NN';
+								break;
 							}
 							$content .= '">';
 							if ($ctype=="user" || WT_USER_GEDCOM_ADMIN) $content .= $removeFavourite;
 							ob_start();
-							print_pedigree_person($record, $style, 1, $key);
+							print_pedigree_person($record, $style);
 							$content .= ob_get_clean();
 							$content .= $favorite['note'];
 							$content .= '</div>';
@@ -163,8 +162,7 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 			}
 		}
 		if ($ctype=='user' || WT_USER_GEDCOM_ADMIN) {
-			$uniqueID = (int)(microtime() * 1000000); // This block can theoretically appear multiple times, so use a unique ID.
-			$content .= '<script>var pastefield; function paste_id(value) {pastefield.value=value;}</script>';
+			$uniqueID = Uuid::uuid4(); // This block can theoretically appear multiple times, so use a unique ID.
 			$content .= '<div class="add_fav_head">';
 			$content .= '<a href="#" onclick="return expand_layer(\'add_fav'.$uniqueID.'\');">'.WT_I18N::translate('Add a new favorite').'<i id="add_fav'.$uniqueID.'_img" class="icon-plus"></i></a>';
 			$content .= '</div>';
@@ -176,7 +174,7 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 			$content .= '<div class="add_fav_ref">';
 			$content .= '<input type="radio" name="fav_category" value="record" checked="checked" onclick="jQuery(\'#gid'.$uniqueID.'\').removeAttr(\'disabled\'); jQuery(\'#url, #favtitle\').attr(\'disabled\',\'disabled\').val(\'\');">';
 			$content .= '<label for="gid'.$uniqueID.'">'.WT_I18N::translate('Enter an individual, family, or source ID').'</label>';
-			$content .= '<input class="pedigree_form" type="text" name="gid" id="gid'.$uniqueID.'" size="5" value="">';
+			$content .= '<input class="pedigree_form" data-autocomplete-type="IFSRO" type="text" name="gid" id="gid'.$uniqueID.'" size="5" value="">';
 			$content .= ' '.print_findindi_link('gid'.$uniqueID);
 			$content .= ' '.print_findfamily_link('gid'.$uniqueID);
 			$content .= ' '.print_findsource_link('gid'.$uniqueID);
@@ -195,6 +193,13 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 			$content .= '</form></div>';
 		}
 
+		// Restore GEDCOM configuration
+		unset($show_full);
+		if (isset($saveShowFull)) {
+			$show_full = $saveShowFull;
+		}
+		$PEDIGREE_FULL_DETAILS = $savePedigreeFullDetails;
+
 		if ($template) {
 			if ($block) {
 				require WT_THEME_DIR.'templates/block_small_temp.php';
@@ -204,28 +209,24 @@ class gedcom_favorites_WT_Module extends WT_Module implements WT_Module_Block {
 		} else {
 			return $content;
 		}
-		// Restore GEDCOM configuration
-		unset($show_full);
-		if (isset($saveShowFull)) $show_full = $saveShowFull;
-		$PEDIGREE_FULL_DETAILS = $savePedigreeFullDetails;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function loadAjax() {
 		return false;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isUserBlock() {
 		return false;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isGedcomBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function configureBlock($block_id) {
 		if (WT_Filter::postBool('save') && WT_Filter::checkCsrf()) {
 			set_block_setting($block_id, 'block',  WT_Filter::postBool('block'));

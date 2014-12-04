@@ -2,10 +2,10 @@
 // View for the fan chart.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,24 +19,53 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'fanchart.php');
 require './includes/session.php';
 require WT_ROOT.'includes/functions/functions_edit.php';
 
-$controller=new WT_Controller_Fanchart();
+$controller = new WT_Controller_Fanchart();
 
 if (WT_Filter::getBool('img')) {
 	Zend_Session::writeClose();
-	$controller->generate_fan_chart('png');
-	exit;
+	header('Content-Type: image/png');
+	echo $controller->generateFanChart('png', $fanChart); // $fanChart comes from the theme
+	return;
 }
 
 $controller
 	->pageHeader()
-	->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js')
-	->addInlineJavascript('var pastefield; function paste_id(value) { pastefield.value=value; }'); // For the 'find indi' link
+	->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+	->addInlineJavascript('
+		autocomplete();
+		var WT_FANCHART = (function() {
+			jQuery("area")
+				.click(function (e) {
+					e.stopPropagation();
+					e.preventDefault();
+					var target = jQuery(this.hash);
+					target
+						// position the menu centered immediately above the mouse click position and
+						// make sure it doesn’t end up off the screen
+						.css({
+							left: Math.max(0 ,e.pageX - (target.outerWidth()/2)),
+							top:  Math.max(0, e.pageY - target.outerHeight())
+						})
+						.toggle()
+						.siblings(".fan_chart_menu").hide();
+				});
+			jQuery(".fan_chart_menu")
+				.on("click", "a", function(e) {
+					e.stopPropagation();
+				});
+			jQuery("#fan_chart")
+				.click(function(e) {
+					jQuery(".fan_chart_menu").hide();
+				});
+			return "' . strip_tags($controller->root->getFullName()) . '";
+		})();
+	');
 
 ?>
 <div id="page-fan">
@@ -46,14 +75,18 @@ $controller
 		<table class="list_table">
 			<tr>
 				<td class="descriptionbox">
-					<?php echo WT_I18N::translate('Individual'); ?>
+					<label for="rootid">
+						<?php echo WT_I18N::translate('Individual'); ?>
+					</label>
 				</td>
 				<td class="optionbox">
-					<input class="pedigree_form" type="text" name="rootid" id="rootid" size="3" value="<?php echo $controller->rootid; ?>">
+					<input class="pedigree_form" data-autocomplete-type="INDI" type="text" name="rootid" id="rootid" size="3" value="<?php echo $controller->root->getXref(); ?>">
 					<?php echo print_findindi_link('rootid'); ?>
 				</td>
 				<td class="descriptionbox">
-					<?php echo WT_I18N::translate('Layout'); ?>
+					<label for="fan_style">
+						<?php echo WT_I18N::translate('Layout'); ?>
+						</label>
 				</td>
 				<td class="optionbox">
 					<?php echo select_edit_control('fan_style', $controller->getFanStyles(), null, $controller->fan_style); ?>
@@ -64,16 +97,20 @@ $controller
 			</tr>
 			<tr>
 				<td class="descriptionbox">
-					<?php echo WT_I18N::translate('Generations'); ?>
+					<label for="generations">
+						<?php echo WT_I18N::translate('Generations'); ?>
+					</label>
 				</td>
 				<td class="optionbox">
 					<?php echo edit_field_integers('generations', $controller->generations, 2, 9); ?>
 				</td>
 				<td class="descriptionbox">
-					<?php echo WT_I18N::translate('Width'), help_link('fan_width'); ?>
+					<label for="fan_width">
+						<?php echo WT_I18N::translate('Width'), help_link('fan_width'); ?>
+						</label>
 				</td>
 				<td class="optionbox">
-					<input type="text" size="3" name="fan_width" value="<?php echo $controller->fan_width; ?>"> %
+					<input type="text" size="3" id="fan_width" name="fan_width" value="<?php echo $controller->fan_width; ?>"> %
 				</td>
 			</tr>
 		</table>
@@ -86,6 +123,6 @@ if ($controller->error_message) {
 }
 
 if ($controller->root) {
-	echo '<div id="fan_chart">', $controller->generate_fan_chart('html'), '</div>';
+	echo '<div id="fan_chart">', $controller->generateFanChart('html', $fanChart), '</div>';
 }
 echo '</div>';

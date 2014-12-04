@@ -4,10 +4,10 @@
 // Various printing functions used by all scripts and included by the functions.php file.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,158 +21,137 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use Rhumsaa\Uuid\Uuid;
+use WT\Auth;
+use WT\User;
 
 /**
-* print the information for an individual chart box
-*
-* find and print a given individuals information for a pedigree chart
-* @param string $pid the Gedcom Xref ID of the   to print
-* @param int $style the style to print the box in, 1 for smaller boxes, 2 for larger boxes
-* @param int $count on some charts it is important to keep a count of how many boxes were printed
-*/
-function print_pedigree_person($person, $style=1, $count=0, $personcount="1") {
-	global $HIDE_LIVE_PEOPLE, $SHOW_LIVING_NAMES, $GEDCOM;
-	global $SHOW_HIGHLIGHT_IMAGES, $bwidth, $bheight, $PEDIGREE_FULL_DETAILS, $SHOW_PEDIGREE_PLACES;
-	global $TEXT_DIRECTION, $DEFAULT_PEDIGREE_GENERATIONS, $OLD_PGENS, $talloffset, $PEDIGREE_LAYOUT;
+ * print the information for an individual chart box
+ *
+ * find and print a given individuals information for a pedigree chart
+ *
+ * @param WT_Individual $person The person to print
+ * @param integer       $style  the style to print the box in, 1 for smaller boxes, 2 for larger boxes
+ */
+function print_pedigree_person(WT_Individual $person = null, $style = 1) {
+	global $GEDCOM;
+	global $SHOW_HIGHLIGHT_IMAGES, $bwidth, $bheight, $PEDIGREE_FULL_DETAILS;
+	global $DEFAULT_PEDIGREE_GENERATIONS, $OLD_PGENS, $talloffset, $PEDIGREE_LAYOUT;
 	global $chart_style, $box_width, $generations, $show_spouse, $show_full;
 	global $CHART_BOX_TAGS, $SHOW_LDS_AT_GLANCE, $PEDIGREE_SHOW_GENDER;
 	global $SEARCH_SPIDER;
 
-	if ($style != 2) $style=1;
-	if (empty($show_full)) $show_full = 0;
-	if (empty($PEDIGREE_FULL_DETAILS)) $PEDIGREE_FULL_DETAILS = 0;
+	if (empty($show_full)) {
+		$show_full = 0;
+	}
 
-	if (!isset($OLD_PGENS)) $OLD_PGENS = $DEFAULT_PEDIGREE_GENERATIONS;
-	if (!isset($talloffset)) $talloffset = $PEDIGREE_LAYOUT;
+	if (empty($PEDIGREE_FULL_DETAILS)) {
+		$PEDIGREE_FULL_DETAILS = 0;
+	}
+
+	if (!isset($OLD_PGENS)) {
+		$OLD_PGENS = $DEFAULT_PEDIGREE_GENERATIONS;
+	}
+	if (!isset($talloffset)) {
+		$talloffset = $PEDIGREE_LAYOUT;
+	}
+
+	// extend $style to incorporate compact view
+	$style = $show_full ? $style == 2 ? 2 : 1 : 0;
+	/* $style in conjunction with "box-style" and "detail" is used to create css classes
+	 * e.g box-style1 and detail1
+	 * 0: compact box   - used in charts (birth & death events hidden)
+	 * 1: small box     - used in charts (birth & death events shown)
+	 * 2: large box     - used elsewhere eg favourites block
+	 */
+	$dims = "style='width:{$bwidth}px; min-height:{$bheight}px'";
+
 	// NOTE: Start div out-rand()
 	if (!$person) {
-		echo "<div id=\"out-", rand(), "\" class=\"person_boxNN\" style=\"width: ", $bwidth, "px; height: ", $bheight, "px; overflow: hidden;\">";
-		echo '<br>';
-		echo '</div>';
-		return false;
+		echo "<div $dims class=\"person_boxNN box-style$style\"></div>";
+		return;
 	}
-	$pid=$person->getXref();
-	if ($count==0) $count = rand();
-	$lbwidth = $bwidth*.75;
-	if ($lbwidth < 150) $lbwidth = 150;
+	$pid = $person->getXref();
+	$isF = array_search($person->getSex(), array('' => 'M', 'F' => 'F', 'NN' => 'U'));
 
-	$tmp=array('M'=>'', 'F'=>'F', 'U'=>'NN');
-	$isF=$tmp[$person->getSex()];
+	$personlinks   = '';
+	$icons         = '';
+	$genderImage   = '';
+	$BirthDeath    = '';
+	$LDSord        = '';
+	$outBoxAdd     = "class='person_box_template person_box$isF box-style$style";
+	if (!$show_full) {
+		$outBoxAdd .= " iconz";
+	}
+	$outBoxAdd .= $style < 2 ? ("' " . $dims) : "'";
 
-	$personlinks = '';
-	$icons = '';
-	$genderImage = '';
-	$BirthDeath = '';
-	$birthplace = '';
-	$outBoxAdd = '';
-	$showid = '';
-	$iconsStyleAdd = 'float:right;';
-	if ($TEXT_DIRECTION=='rtl') $iconsStyleAdd='float:left;';
-
-	$uniqueID = (int)(microtime() * 1000000);
-	$boxID = $pid.'.'.$personcount.'.'.$count.'.'.$uniqueID;
-	$mouseAction4 = " onclick=\"expandbox('".$boxID."', $style); return false;\"";
 	if ($person->canShowName()) {
 		if (empty($SEARCH_SPIDER)) {
 			//-- draw a box for the family popup
-			// NOTE: Start div I.$pid.$personcount.$count.links
-			$personlinks .= '<ul class="person_box'.$isF.'">';
-			$personlinks .= '<li><a href="pedigree.php?rootid='.$pid.'&amp;show_full='.$PEDIGREE_FULL_DETAILS.'&amp;PEDIGREE_GENERATIONS='.$OLD_PGENS.'&amp;talloffset='.$talloffset.'&amp;ged='.rawurlencode($GEDCOM).'"><b>'.WT_I18N::translate('Pedigree').'</b></a></li>';
+
+			$personlinks .= '<ul class="person_box' . $isF . '">';
+			$personlinks .= '<li><a href="pedigree.php?rootid=' . $pid . '&amp;show_full=' . $PEDIGREE_FULL_DETAILS . '&amp;PEDIGREE_GENERATIONS=' . $OLD_PGENS . '&amp;talloffset=' . $talloffset . '&amp;ged=' . rawurlencode($GEDCOM) . '"><strong>' . WT_I18N::translate('Pedigree') . '</strong></a></li>';
 			if (array_key_exists('googlemap', WT_Module::getActiveModules())) {
-				$personlinks .= '<li><a href="module.php?mod=googlemap&amp;mod_action=pedigree_map&amp;rootid='.$pid.'&amp;ged='.WT_GEDURL.'"><b>'.WT_I18N::translate('Pedigree map').'</b></a></li>';
+				$personlinks .= '<li><a href="module.php?mod=googlemap&amp;mod_action=pedigree_map&amp;rootid=' . $pid . '&amp;ged=' . WT_GEDURL . '"><strong>' . WT_I18N::translate('Pedigree map') . '</strong></a></li>';
 			}
-			if (WT_USER_GEDCOM_ID && WT_USER_GEDCOM_ID!=$pid) {
-				$personlinks .= '<li><a href="relationship.php?show_full='.$PEDIGREE_FULL_DETAILS.'&amp;pid1='.WT_USER_GEDCOM_ID.'&amp;pid2='.$pid.'&amp;show_full='.$PEDIGREE_FULL_DETAILS.'&amp;pretty=2&amp;followspouse=1&amp;ged='.WT_GEDURL.'"><b>'.WT_I18N::translate('Relationship to me').'</b></a></li>';
+			if (WT_USER_GEDCOM_ID && WT_USER_GEDCOM_ID != $pid) {
+				$personlinks .= '<li><a href="relationship.php?show_full=' . $PEDIGREE_FULL_DETAILS . '&amp;pid1=' . WT_USER_GEDCOM_ID . '&amp;pid2=' . $pid . '&amp;show_full=' . $PEDIGREE_FULL_DETAILS . '&amp;pretty=2&amp;followspouse=1&amp;ged=' . WT_GEDURL . '"><strong>' . WT_I18N::translate('Relationship to me') . '</strong></a></li>';
 			}
-			$personlinks .= '<li><a href="descendancy.php?rootid='.$pid.'&amp;show_full='.$PEDIGREE_FULL_DETAILS.'&amp;generations='.$generations.'&amp;box_width='.$box_width.'&amp;ged='.rawurlencode($GEDCOM).'"><b>'.WT_I18N::translate('Descendants').'</b></a></li>';
-			$personlinks .= '<li><a href="ancestry.php?rootid='.$pid.'&amp;show_full='.$PEDIGREE_FULL_DETAILS.'&amp;chart_style='.$chart_style.'&amp;PEDIGREE_GENERATIONS='.$OLD_PGENS.'&amp;box_width='.$box_width.'&amp;ged='.rawurlencode($GEDCOM).'"><b>'.WT_I18N::translate('Ancestors').'</b></a></li>';
-			$personlinks .= '<li><a href="compact.php?rootid='.$pid.'&amp;ged='.rawurlencode($GEDCOM).'"><b>'.WT_I18N::translate('Compact tree').'</b></a></li>';
+			$personlinks .= '<li><a href="descendancy.php?rootid=' . $pid . '&amp;show_full=' . $PEDIGREE_FULL_DETAILS . '&amp;generations=' . $generations . '&amp;box_width=' . $box_width . '&amp;ged=' . rawurlencode($GEDCOM) . '"><strong>' . WT_I18N::translate('Descendants') . '</strong></a></li>';
+			$personlinks .= '<li><a href="ancestry.php?rootid=' . $pid . '&amp;show_full=' . $PEDIGREE_FULL_DETAILS . '&amp;chart_style=' . $chart_style . '&amp;PEDIGREE_GENERATIONS=' . $OLD_PGENS . '&amp;box_width=' . $box_width . '&amp;ged=' . rawurlencode($GEDCOM) . '"><strong>' . WT_I18N::translate('Ancestors') . '</strong></a></li>';
+			$personlinks .= '<li><a href="compact.php?rootid=' . $pid . '&amp;ged=' . rawurlencode($GEDCOM) . '"><strong>' . WT_I18N::translate('Compact tree') . '</strong></a></li>';
 			if (function_exists("imagettftext")) {
-				$personlinks .= '<li><a href="fanchart.php?rootid='.$pid.'&amp;PEDIGREE_GENERATIONS='.$OLD_PGENS.'&amp;ged='.rawurlencode($GEDCOM).'"><b>'.WT_I18N::translate('Fan chart').'</b></a></li>';
+				$personlinks .= '<li><a href="fanchart.php?rootid=' . $pid . '&amp;PEDIGREE_GENERATIONS=' . $OLD_PGENS . '&amp;ged=' . rawurlencode($GEDCOM) . '"><strong>' . WT_I18N::translate('Fan chart') . '</strong></a></li>';
 			}
-			$personlinks .= '<li><a href="hourglass.php?rootid='.$pid.'&amp;show_full='.$PEDIGREE_FULL_DETAILS.'&amp;chart_style='.$chart_style.'&amp;PEDIGREE_GENERATIONS='.$OLD_PGENS.'&amp;box_width='.$box_width.'&amp;ged='.rawurlencode($GEDCOM).'&amp;show_spouse='.$show_spouse.'"><b>'.WT_I18N::translate('Hourglass chart').'</b></a></li>';
+			$personlinks .= '<li><a href="hourglass.php?rootid=' . $pid . '&amp;show_full=' . $PEDIGREE_FULL_DETAILS . '&amp;chart_style=' . $chart_style . '&amp;PEDIGREE_GENERATIONS=' . $OLD_PGENS . '&amp;box_width=' . $box_width . '&amp;ged=' . rawurlencode($GEDCOM) . '&amp;show_spouse=' . $show_spouse . '"><strong>' . WT_I18N::translate('Hourglass chart') . '</strong></a></li>';
 			if (array_key_exists('tree', WT_Module::getActiveModules())) {
-				$personlinks .= '<li><a href="module.php?mod=tree&amp;mod_action=treeview&amp;ged='.WT_GEDURL.'&amp;rootid='.$pid.'"><b>'.WT_I18N::translate('Interactive tree').'</b></a></li>';
+				$personlinks .= '<li><a href="module.php?mod=tree&amp;mod_action=treeview&amp;ged=' . WT_GEDURL . '&amp;rootid=' . $pid . '"><strong>' . WT_I18N::translate('Interactive tree') . '</strong></a></li>';
 			}
 			foreach ($person->getSpouseFamilies() as $family) {
 				$spouse = $family->getSpouse($person);
 				if ($spouse) {
 					$personlinks .= '<li>';
-					$personlinks .= '<a href="'.$family->getHtmlUrl().'"><b>'.WT_I18N::translate('Family with spouse').'</b></a><br>';
-					$personlinks .= '<a href="'.$spouse->getHtmlUrl().'">' . $spouse->getFullName() . '</a>';
+					$personlinks .= '<a href="' . $family->getHtmlUrl() . '"><strong>' . WT_I18N::translate('Family with spouse') . '</strong></a><br>';
+					$personlinks .= '<a href="' . $spouse->getHtmlUrl() . '">' . $spouse->getFullName() . '</a>';
 					$personlinks .= '</li>';
 					$personlinks .= '<li><ul>';
 				}
 				foreach ($family->getChildren() as $child) {
-					$personlinks .= '<li><a href="'.$child->getHtmlUrl().'">';
+					$personlinks .= '<li><a href="' . $child->getHtmlUrl() . '">';
 					$personlinks .= $child->getFullName();
 					$personlinks .= '</a></li>';
 				}
 				$personlinks .= '</ul></li>';
 			}
 			$personlinks .= '</ul>';
-			// NOTE: Start div out-$pid.$personcount.$count
-			if ($style==1) $outBoxAdd .= " class=\"person_box$isF person_box_template style1\" style=\"width: ".$bwidth."px; height: ".$bheight."px; z-index:-1;\"";
-			else $outBoxAdd .= " class=\"person_box$isF person_box_template style0\"";
+
 			// NOTE: Zoom
-			if (!$show_full) {
-				$outBoxAdd .= $mouseAction4;
-			} else {
-				$icons .= "<a href=\"#\"".$mouseAction4." id=\"iconz-$boxID\" class=\"icon-zoomin\" title=\"".WT_I18N::translate('Zoom in/out on this box.')."\"></a>";
-				$icons .= '<div class="itr"><a href="#" class="icon-pedigree"></a><div class="popup">'.$personlinks.'</div></div>';
+			if ($show_full) {
+				$icons .= '<span class="iconz icon-zoomin" title="' . WT_I18N::translate('Zoom in/out on this box.') . '"></span>';
+				$icons .= '<div class="itr"><a href="#" class="icon-pedigree"></a><div class="popup">' . $personlinks . '</div></div>';
 			}
-		} else {
-			if ($style==1) {
-				$outBoxAdd .= "class=\"person_box$isF\" style=\"width: ".$bwidth."px; height: ".$bheight."px; overflow: hidden;\"";
-			} else {
-				$outBoxAdd .= "class=\"person_box$isF\" style=\"overflow: hidden;\"";
-			}
-			// NOTE: Zoom
-			if (!$SEARCH_SPIDER) {
-				$outBoxAdd .= $mouseAction4;
-			}
-		}
-	} else {
-		if ($style==1) {
-			$outBoxAdd .= "class=\"person_box$isF person_box_template style1\" style=\"width: ".$bwidth."px; height: ".$bheight."px;\"";
-		} else {
-			$outBoxAdd .= "class=\"person_box$isF person_box_template style0\"";
 		}
 	}
 	//-- find the name
-	$name = $person->getFullName();
+	$name      = $person->getFullName();
 	$shortname = $person->getShortName();
+	$thumbnail = $SHOW_HIGHLIGHT_IMAGES ? $person->displayImage() : '';
 
-	if ($SHOW_HIGHLIGHT_IMAGES) {
-		$thumbnail = $person->displayImage();
-	} else {
-		$thumbnail = '';
+	if ($PEDIGREE_SHOW_GENDER && $show_full) {
+		$genderImage = $person->getSexImage('large');
 	}
 
 	//-- find additional name, e.g. Hebrew
-	$addname=$person->getAddName();
-
-	if ($PEDIGREE_SHOW_GENDER && $show_full) {
-		$genderImage = " ".$person->getSexImage('small', "box-$boxID-gender");
-	}
-
-	// Here for alternate name2
-	if ($addname) {
-		$addname = "<br><span id=\"addnamedef-$boxID\" class=\"name1\"> ".$addname."</span>";
-	}
+	$addname = $person->getAddName();
 
 	if ($SHOW_LDS_AT_GLANCE && $show_full) {
-		$addname = ' <span class="details$style">'.get_lds_glance($person).'</span>' . $addname;
+		$LDSord = get_lds_glance($person);
 	}
 
 	if ($show_full && $person->canShow()) {
-		$opt_tags=preg_split('/\W/', $CHART_BOX_TAGS, 0, PREG_SPLIT_NO_EMPTY);
+		$opt_tags = preg_split('/\W/', $CHART_BOX_TAGS, 0, PREG_SPLIT_NO_EMPTY);
 		// Show BIRT or equivalent event
 		foreach (explode('|', WT_EVENTS_BIRT) as $birttag) {
 			if (!in_array($birttag, $opt_tags)) {
@@ -184,8 +163,8 @@ function print_pedigree_person($person, $style=1, $count=0, $personcount="1") {
 			}
 		}
 		// Show optional events (before death)
-		foreach ($opt_tags as $key=>$tag) {
-			if (!preg_match('/^('.WT_EVENTS_DEAT.')$/', $tag)) {
+		foreach ($opt_tags as $key => $tag) {
+			if (!preg_match('/^(' . WT_EVENTS_DEAT . ')$/', $tag)) {
 				$event = $person->getFirstFact($tag);
 				if (!is_null($event)) {
 					$BirthDeath .= $event->summary();
@@ -214,45 +193,50 @@ function print_pedigree_person($person, $style=1, $count=0, $personcount="1") {
 	}
 
 	// Output to template
-	$classfacts='';
 	if ($show_full) {
-	   require WT_THEME_DIR.'templates/personbox_template.php';
+		require WT_THEME_DIR . 'templates/personbox_template.php';
 	} else {
-	   require WT_THEME_DIR.'templates/compactbox_template.php';
+		require WT_THEME_DIR . 'templates/compactbox_template.php';
 	}
 }
 
-// print HTML header meta links
-// previously identical code in each theme’s header.php file
-// now added as a function here.
-
+/**
+ * Print HTML header meta links
+ *
+ * @param string $META_DESCRIPTION
+ * @param string $META_ROBOTS
+ * @param string $META_GENERATOR
+ * @param string $LINK_CANONICAL
+ *
+ * @return string
+ */
 function header_links($META_DESCRIPTION, $META_ROBOTS, $META_GENERATOR, $LINK_CANONICAL) {
-	$header_links='';
-	if (!empty($LINK_CANONICAL)) {
-		$header_links.= '<link rel="canonical" href="'. $LINK_CANONICAL. '">';
+	$header_links = '';
+	if ($LINK_CANONICAL) {
+		$header_links .= '<link rel="canonical" href="' . $LINK_CANONICAL . '">';
 	}
-	if (!empty($META_DESCRIPTION)) {
-		$header_links.= '<meta name="description" content="'. WT_Filter::escapeHtml($META_DESCRIPTION). '">';
+	if ($META_DESCRIPTION) {
+		$header_links .= '<meta name="description" content="' . $META_DESCRIPTION . '">';
 	}
-	$header_links.= '<meta name="robots" content="'. $META_ROBOTS. '">';
-	if (!empty($META_GENERATOR)) {
-		$header_links.= '<meta name="generator" content="'. $META_GENERATOR. '">';
+	$header_links .= '<meta name="robots" content="' . $META_ROBOTS . '">';
+	if ($META_GENERATOR) {
+		$header_links .= '<meta name="generator" content="' . $META_GENERATOR . '">';
 	}
 	return $header_links;
 }
 
 /**
-* Prints Exection Statistics
-*
-* prints out the execution time and the databse queries
-*/
+ * Prints Exection Statistics
+ *
+ * prints out the execution time and the databse queries
+ */
 function execution_stats() {
 	global $start_time;
 
 	return
 		'<div class="execution_stats">'.
 		WT_I18N::translate(
-			'Execution time: %1$s seconds. Database queries: %2$s. Memory usage: %3$s KB.',
+			'Execution time: %1$s seconds.  Database queries: %2$s.  Memory usage: %3$s KB.',
 			WT_I18N::number(microtime(true) - $start_time, 3),
 			WT_I18N::number(WT_DB::getQueryCount()),
 			WT_I18N::number(memory_get_peak_usage(true)/1024)
@@ -260,7 +244,11 @@ function execution_stats() {
 		'</div>';
 }
 
-// Generate a login link
+/**
+ * Generate a login link.
+ *
+ * @return string
+ */
 function login_link() {
 	global $SEARCH_SPIDER;
 
@@ -268,32 +256,39 @@ function login_link() {
 		return '';
 	} else {
 		return
-			'<a href="'.WT_LOGIN_URL.'?url='.rawurlencode(get_query_url()).'" class="link">'.
-//			'<a href="#" onclick="modalDialog(\''. WT_LOGIN_URL .'?url='.rawurlencode(get_query_url()) .'\', \''. WT_I18N::translate('Login') . '\');" '.$extra.' class="link">'.
-			WT_I18N::translate('Login').
+			'<a href="' . WT_LOGIN_URL . '?url='.rawurlencode(get_query_url()) . '" class="link">' .
+			WT_I18N::translate('Login') .
 			'</a>';
 	}
 }
 
-// Generate a logout link
+/**
+ * Generate a logout link.
+ *
+ * @return string
+ */
 function logout_link() {
 	global $SEARCH_SPIDER;
 
 	if ($SEARCH_SPIDER) {
 		return '';
 	} else {
-		return '<a href="index.php?logout=1" class="link">' . WT_I18N::translate('Logout') . '</a>';
+		return '<a href="logout.php" class="link">' . WT_I18N::translate('Logout') . '</a>';
 	}
 }
 
-//generate Who is online list
+/**
+ * Generate Who is online list.
+ *
+ * @return string
+ */
 function whoisonline() {
 	$NumAnonymous = 0;
 	$loggedusers = array ();
 	$content='';
-	foreach (get_logged_in_users() as $user_id=>$user_name) {
-		if (WT_USER_IS_ADMIN || get_user_setting($user_id, 'visibleonline')) {
-			$loggedusers[$user_id]=$user_name;
+	foreach (User::allLoggedIn() as $user) {
+		if (Auth::isAdmin() || $user->getPreference('visibleonline')) {
+			$loggedusers[] = $user;
 		} else {
 			$NumAnonymous++;
 		}
@@ -311,15 +306,13 @@ function whoisonline() {
 	}
 	$content .= '</div>';
 	$content .= '<div class="logged_in_list">';
-	if (WT_USER_ID) {
-		$i=0;
-		foreach ($loggedusers as $user_id=>$user_name) {
+	if (Auth::check()) {
+		foreach ($loggedusers as $user) {
 			$content .= '<div class="logged_in_name">';
-			$content .= WT_Filter::escapeHtml(getUserFullName($user_id) . ' - ' . $user_name);
-			if (true || WT_USER_ID!=$user_id && get_user_setting($user_id, 'contactmethod')!="none") {
-				$content .= ' <a class="icon-email" href="#" onclick="return message(\'' . WT_Filter::escapeJs($user_name) . '\', \'\', \'' . WT_Filter::escapeJs(get_query_url()) . '\');" title="' . WT_I18N::translate('Send message').'"></a>';
+			$content .= WT_Filter::escapeHtml($user->getRealName()) . ' - ' . WT_Filter::escapeHtml($user->getUserName());
+			if (Auth::id() != $user->getUserId() && $user->getPreference('contactmethod') != 'none') {
+				$content .= ' <a class="icon-email" href="#" onclick="return message(\'' . WT_Filter::escapeJs($user->getUserName()) . '\', \'\', \'' . WT_Filter::escapeJs(get_query_url()) . '\');" title="' . WT_I18N::translate('Send a message').'"></a>';
 			}
-			$i++;
 			$content .= '</div>';
 		}
 	}
@@ -327,33 +320,49 @@ function whoisonline() {
 	return $content;
 }
 
-
-// Print a link to allow email/messaging contact with a user
-// Optionally specify a method (used for webmaster/genealogy contacts)
+/**
+ * Print a link to allow email/messaging contact with a user
+ * Optionally specify a method (used for webmaster/genealogy contacts)
+ *
+ * @param integer $user_id
+ *
+ * @return string
+ */
 function user_contact_link($user_id) {
-	$method = get_user_setting($user_id, 'contactmethod');
+	$user = User::find($user_id);
 
-	$fullname = getUserFullName($user_id);
+	if ($user) {
+		$method = $user->getPreference('contactmethod');
 
-	switch ($method) {
-	case 'none':
+		switch ($method) {
+		case 'none':
+			return '';
+		case 'mailto':
+			return '<a href="mailto:' . WT_Filter::escapeHtml($user->getEmail()).'">'.WT_Filter::escapeHtml($user->getRealName()).'</a>';
+		default:
+			return "<a href='#' onclick='message(\"" . WT_Filter::escapeJs($user->getUserName()) . "\", \"" . $method . "\", \"" . WT_SERVER_NAME . WT_SCRIPT_PATH . WT_Filter::escapeJs(get_query_url()) . "\", \"\");return false;'>" . WT_Filter::escapeHtml($user->getRealName()) . '</a>';
+		}
+	} else {
 		return '';
-	case 'mailto':
-		$email=getUserEmail($user_id);
-		return '<a href="mailto:' . WT_Filter::escapeHtml($email).'">'.WT_Filter::escapeHtml($fullname).'</a>';
-	default:
-		return "<a href='#' onclick='message(\"" . WT_Filter::escapeJs(get_user_name($user_id)) . "\", \"" . $method . "\", \"" . WT_Filter::escapeJs(get_query_url()) . "\", \"\");return false;'>" . WT_Filter::escapeHtml($fullname) . '</a>';
 	}
 }
 
-// print links for genealogy and technical contacts
-//
-// this function will print appropriate links based on the preferred contact methods for the genealogy
-// contact user and the technical support contact user
+/**
+ * Print links for genealogy and technical contacts.
+ * This function will print appropriate links based on the preferred
+ * contact methods for the genealogy contact user and the technical
+ * support contact user.
+ *
+ * @param integer $ged_id
+ *
+ * @return string
+ */
 function contact_links($ged_id=WT_GED_ID) {
-	$contact_user_id  =get_gedcom_setting($ged_id, 'CONTACT_USER_ID');
-	$webmaster_user_id=get_gedcom_setting($ged_id, 'WEBMASTER_USER_ID');
-	$supportLink = user_contact_link($webmaster_user_id);
+	$tree = WT_Tree::get($ged_id);
+
+	$contact_user_id   = $tree->getPreference('CONTACT_USER_ID');
+	$webmaster_user_id = $tree->getPreference('WEBMASTER_USER_ID');
+	$supportLink       = user_contact_link($webmaster_user_id);
 	if ($webmaster_user_id==$contact_user_id) {
 		$contactLink = $supportLink;
 	} else {
@@ -383,92 +392,85 @@ function contact_links($ged_id=WT_GED_ID) {
 }
 
 /**
-* print a note record
-* @param string $text
-* @param int $nlevel the level of the note record
-* @param string $nrec the note record to print
-* @param bool $textOnly Don't print the "Note: " introduction
-* @return boolean
-*/
+ * print a note record
+ *
+ * @param string $text
+ * @param integer $nlevel   the level of the note record
+ * @param string  $nrec     the note record to print
+ * @param boolean $textOnly Don't print the "Note: " introduction
+ *
+ * @return string
+ */
 function print_note_record($text, $nlevel, $nrec, $textOnly=false) {
-	global $EXPAND_SOURCES, $EXPAND_NOTES;
-	$elementID = 'N-'.(int)(microtime()*1000000);
+	global $WT_TREE;
 
 	$text .= get_cont($nlevel, $nrec);
 
 	// Check if shared note (we have already checked that it exists)
 	if (preg_match('/^0 @('.WT_REGEX_XREF.')@ NOTE/', $nrec, $match)) {
-		$note = WT_Note::getInstance($match[1]);
+		$note  = WT_Note::getInstance($match[1]);
+		$label = 'SHARED_NOTE';
 		// If Census assistant installed, allow it to format the note
 		if (array_key_exists('GEDFact_assistant', WT_Module::getActiveModules())) {
-			$text = GEDFact_assistant_WT_Module::formatCensusNote($note);
+			$html = GEDFact_assistant_WT_Module::formatCensusNote($note);
 		} else {
-			$text = WT_Filter::expandUrls($note->getNote());
+			$html = WT_Filter::formatText($note->getNote(), $WT_TREE);
 		}
 	} else {
-		$note = null;
-		$text = WT_Filter::expandUrls($text);
+		$note  = null;
+		$label = 'NOTE';
+		$html  = WT_Filter::formatText($text, $WT_TREE);
 	}
 
 	if ($textOnly) {
 		return strip_tags($text);
 	}
 
-	if (strpos($text, "\n") !== false) {
-		list($first_line, $cont_lines) = explode("\n", $text, 2);
+	if (strpos($text, "\n") === false) {
+		// A one-line note? strip the block-level tags, so it displays inline
+		return WT_Gedcom_Tag::getLabelValue($label, strip_tags($html, '<a><strong><em>'));
+	} elseif ($WT_TREE->getPreference('EXPAND_NOTES')) {
+		// A multi-line note, and we're expanding notes by default
+		return WT_Gedcom_Tag::getLabelValue($label, $html);
 	} else {
-		$first_line = $text;
-		$cont_lines = '';
-	}
-
-	$data = '<div class="fact_NOTE"><span class="label label-info">';
-	if ($cont_lines) {
-		if ($EXPAND_NOTES) {
-			$plusminus='minus';
+		// A multi-line note, with an expand/collapse option
+		$element_id = Uuid::uuid4();
+		// NOTE: class "note-details" is (currently) used only by some third-party themes
+		if ($note) {
+			$first_line = '<a href="' . $note->getHtmlUrl() . '">' . $note->getFullName() . '</a>';
 		} else {
-			$plusminus='plus';
+			switch ($WT_TREE->getPreference('FORMAT_TEXT')) {
+				case 'markdown':
+					$text = WT_Filter::markdown($text);
+					$text = html_entity_decode(strip_tags($text, '<a><strong><em>'), ENT_QUOTES, 'UTF-8');
+					break;
+			}
+			list($text) = explode("\n", $text);
+			$first_line = strlen($text) > 100 ? mb_substr($text, 0, 100) . WT_I18N::translate('…') : $text;
 		}
-		$data .= '<a href="#" onclick="expand_layer(\'' . $elementID . '\'); return false;"><i id="' . $elementID . '_img" class="icon-' . $plusminus . '"></i></a> ';
+		return
+			'<div class="fact_NOTE"><span class="label">' .
+			'<a href="#" onclick="expand_layer(\'' . $element_id . '\'); return false;"><i id="' . $element_id . '_img" class="icon-plus"></i></a> ' . WT_Gedcom_Tag::getLabel($label) . ':</span> ' . '<span id="' . $element_id . '-alt">' . $first_line . '</span>' .
+			'</div>' .
+			'<div class="note-details" id="' . $element_id . '" style="display:none">' . $html . '</div>';
 	}
-
-	if ($note) {
-		$data .= WT_I18N::translate('Shared note').': </span> ';
-	} else {
-		$data .= WT_I18N::translate('Note').': </span>';
-	}
-
-	if ($cont_lines) {
-		if ($note) {
-			$first_line = '<a href="' . $note->getHtmlUrl() . '">' . $first_line . '</a>';
-		}
-		$data .= '<span class="field" dir="auto">' . $first_line . '</span>';
-		$data .= '<div id="' . $elementID . '" dir="auto" style="white-space:pre-wrap; display:';
-		$data .= $EXPAND_NOTES ? 'block' : 'none';
-		$data .= '">' . $cont_lines. '</div>';
-	} else {
-		if ($note) {
-			$first_line = '<a href="' . $note->getHtmlUrl() . '">' . $first_line . '</a>';
-		}
-		$data .= '<span class="field" dir="auto">' . $first_line . '</span>';
-	}
-	$data .= '</div>';
-
-	return $data;
 }
 
 /**
-* Print all of the notes in this fact record
-* @param string $factrec the factrecord to print the notes from
-* @param int $level The level of the factrecord
-* @param bool $textOnly Don't print the "Note: " introduction
-*/
+ * Print all of the notes in this fact record
+ *
+ * @param string  $factrec  the factrecord to print the notes from
+ * @param integer $level    The level of the factrecord
+ * @param boolean $textOnly Don't print the "Note: " introduction
+ *
+ * @return string HTML
+ */
 function print_fact_notes($factrec, $level, $textOnly=false) {
 	$data = "";
 	$previous_spos = 0;
 	$nlevel = $level+1;
 	$ct = preg_match_all("/$level NOTE (.*)/", $factrec, $match, PREG_SET_ORDER);
 	for ($j=0; $j<$ct; $j++) {
-		$nid = str_replace("@","",$match[$j][1]);
 		$spos1 = strpos($factrec, $match[$j][0], $previous_spos);
 		$spos2 = strpos($factrec."\n$level", "\n$level", $spos1+1);
 		if (!$spos2) $spos2 = strlen($factrec);
@@ -492,7 +494,7 @@ function print_fact_notes($factrec, $level, $textOnly=false) {
 					}
 				}
 			} else {
-				$data='<div class="fact_NOTE"><span class="label label-info">'.WT_I18N::translate('Note').'</span>: <span class="field error">'.$nid.'</span></div>';
+				$data='<div class="fact_NOTE"><span class="label">'.WT_I18N::translate('Note').'</span>: <span class="field error">'.$nmatch[1].'</span></div>';
 			}
 		}
 		if (!$textOnly) {
@@ -506,41 +508,40 @@ function print_fact_notes($factrec, $level, $textOnly=false) {
 	return $data;
 }
 
-//-- function to print a privacy error with contact method
-function print_privacy_error() {
-	$user_id=get_gedcom_setting(WT_GED_ID, 'CONTACT_USER_ID');
-	$method=get_user_setting($user_id, 'contactmethod');
-	$fullname=getUserFullName($user_id);
-
-	echo '<div class="error">', WT_I18N::translate('This information is private and cannot be shown.'), '</div>';
-	switch ($method) {
-	case 'none':
-		break;
-	case 'mailto':
-		$email=getUserEmail($user_id);
-		echo '<div class="error">', WT_I18N::translate('For more information contact'), ' ', '<a href="mailto:'.WT_Filter::escapeHtml($email).'">'.WT_Filter::escapeHtml($fullname).'</a>', '</div>';
-		break;
-	default:
-		echo '<div class="error">', WT_I18N::translate('For more information contact'), ' ', "<a href='#' onclick='message(\"", WT_Filter::escapeHtml(get_user_name($user_id)), "\", \"", $method, "\", \"", WT_Filter::escapeJs(get_query_url()), "\", \"\"); return false;'>", WT_Filter::escapeHtml($fullname), '</a>', '</div>';
-		break;
-	}
-}
-
-// Print a link for a popup help window
+/**
+ * Print a link for a popup help window.
+ *
+ * @param string $help_topic
+ * @param string $module
+ *
+ * @return string
+ */
 function help_link($help_topic, $module='') {
 	return '<span class="icon-help" onclick="helpDialog(\''.$help_topic.'\',\''.$module.'\'); return false;">&nbsp;</span>';
 }
 
-
-// Print an external help link to the wiki site, in a new window
+/**
+ * Print an external help link to the wiki site, in a new window
+ *
+ * @param string $topic
+ *
+ * @return string
+ */
 function wiki_help_link($topic) {
 	return '<a class="help icon-wiki" href="'.WT_WEBTREES_WIKI.$topic.'" title="'.WT_I18N::translate('webtrees wiki').'" target="_blank">&nbsp;</a>';
 }
 
-// When a user has searched for text, highlight any matches in
-// the displayed string.
+/**
+ * When a user has searched for text, highlight any matches in
+ * the displayed string.
+ *
+ * @param string $string
+ *
+ * @return string
+ */
 function highlight_search_hits($string) {
 	global $controller;
+
 	if ($controller instanceof WT_Controller_Search && $controller->query) {
 		// TODO: when a search contains multiple words, we search independently.
 		// e.g. searching for "FOO BAR" will find records containing both FOO and BAR.
@@ -552,84 +553,91 @@ function highlight_search_hits($string) {
 		}
 		// Match these strings, provided they do not occur inside HTML tags
 		$regex='('.implode('|', $regex).')(?![^<]*>)';
+
 		return preg_replace('/'.$regex.'/i', '<span class="search_hit">$1</span>', $string);
 	} else {
 		return $string;
 	}
 }
 
-// Print the associations from the associated individuals in $event to the individuals in $record
-function print_asso_rela_record(WT_Fact $event, WT_GedcomRecord $record) {
+/**
+ * Print the associations from the associated individuals in $event to the individuals in $record
+ *
+ * @param WT_Fact $event
+ *
+ * @return string
+ */
+function format_asso_rela_record(WT_Fact $event) {
 	global $SEARCH_SPIDER;
 
+	$parent = $event->getParent();
 	// To whom is this record an assocate?
-	if ($record instanceof WT_Individual) {
+	if ($parent instanceof WT_Individual) {
 		// On an individual page, we just show links to the person
-		$associates=array($record);
-	} elseif ($record instanceof WT_Family) {
+		$associates = array($parent);
+	} elseif ($parent instanceof WT_Family) {
 		// On a family page, we show links to both spouses
-		$associates=$record->getSpouses();
+		$associates = $parent->getSpouses();
 	} else {
 		// On other pages, it does not make sense to show associates
-		return;
+		return '';
 	}
 
 	preg_match_all('/^1 ASSO @('.WT_REGEX_XREF.')@((\n[2-9].*)*)/', $event->getGedcom(), $amatches1, PREG_SET_ORDER);
 	preg_match_all('/\n2 _?ASSO @('.WT_REGEX_XREF.')@((\n[3-9].*)*)/', $event->getGedcom(), $amatches2, PREG_SET_ORDER);
+
+	$html = '';
 	// For each ASSO record
 	foreach (array_merge($amatches1, $amatches2) as $amatch) {
-		$person=WT_Individual::getInstance($amatch[1]);
-		if ($person) {
+		$person = WT_Individual::getInstance($amatch[1]);
+		if ($person && $person->canShowName()) {
+			// Is there a "RELA" tag
 			if (preg_match('/\n[23] RELA (.+)/', $amatch[2], $rmatch)) {
-				$rela=$rmatch[1];
+				// Use the supplied relationship as a label
+				$label = WT_Gedcom_Code_Rela::getValue($rmatch[1], $person);
 			} else {
-				$rela='';
+				// Use a default label
+				$label = WT_Gedcom_Tag::getLabel('ASSO', $person);
 			}
-			$html=array();
-			foreach ($associates as $associate) {
-				if ($associate) {
-					if ($rela) {
-						$label='<span class="rela_type">'.WT_Gedcom_Code_Rela::getValue($rela, $person).':&nbsp;</span>';
-						$label_2='<span class="rela_name">'.get_associate_relationship_name($associate, $person).'</span>';
-					} else {
-						// Generate an automatic RELA
-						$label='';
-						$label_2='<span class="rela_name">'.get_associate_relationship_name($associate, $person).'</span>';
-					}
-					if (!$label && !$label_2) {
-						$label=WT_I18N::translate('Relationships');
-						$label_2='';
-					}
-					// For family records (e.g. MARR), identify the spouse with a sex icon
-					if ($record instanceof WT_Family) {
-						$label_2=$associate->getSexImage().$label_2;
+
+			$values = array('<a href="' . $person->getHtmlUrl() . '">' . $person->getFullName() . '</a>');
+			if (!$SEARCH_SPIDER) {
+				foreach ($associates as $associate) {
+					$relationship_name = get_associate_relationship_name($associate, $person);
+					if (!$relationship_name) {
+						$relationship_name = WT_Gedcom_Tag::getLabel('RELA');
 					}
 
-					if ($SEARCH_SPIDER) {
-						$html[]=$label_2; // Search engines cannot use the relationship chart.
-					} else {
-						$html[]='<a href="relationship.php?pid1='.$associate->getXref().'&amp;pid2='.$person->getXref().'&amp;ged='.WT_GEDURL.'">'.$label_2.'</a>';
+					if ($parent instanceof WT_Family) {
+						// For family ASSO records (e.g. MARR), identify the spouse with a sex icon
+						$relationship_name .= $associate->getSexImage();
 					}
+
+					$values[] = '<a href="relationship.php?pid1=' . $associate->getXref() . '&amp;pid2=' . $person->getXref() . '&amp;ged=' . WT_GEDURL . '">' . $relationship_name . '</a>';
 				}
 			}
-			$html=array_unique($html);
-			echo
-				'<div class="fact_ASSO">',$label,
-				implode(WT_I18N::$list_separator, $html),
-				' - ',
-				'<a href="', $person->getHtmlUrl().'">', $person->getFullName(), '</a>';
-				echo '</div>';
+			$value = implode(' — ', $values);
+
+			// Use same markup as WT_Gedcom_Tag::getLabelValue()
+			$asso = WT_I18N::translate('<span class="label">%1$s:</span> <span class="field" dir="auto">%2$s</span>', $label, $value);
+		} elseif (!$person && Auth::isEditor()) {
+			$asso = WT_Gedcom_Tag::getLabelValue('ASSO', '<span class="error">' . $amatch[1] . '</span>');
 		} else {
-			echo WT_Gedcom_Tag::getLabelValue('ASSO', '<span class="error">' . $amatch[1] . '</span>');
+			$asso = '';
 		}
+		$html .= '<div class="fact_ASSO">' . $asso . '</div>';
 	}
+	return $html;
 }
 
 /**
-* Format age of parents in HTML
-*
-* @param string $pid child ID
-*/
+ * Format age of parents in HTML
+ *
+ * @param WT_Individual $person child
+ * @param WT_Date       $birth_date
+ *
+ * @return string HTML
+ */
 function format_parents_age(WT_Individual $person, WT_Date $birth_date) {
 	$html='';
 	$families=$person->getChildFamilies();
@@ -671,12 +679,16 @@ function format_parents_age(WT_Individual $person, WT_Date $birth_date) {
 	return $html;
 }
 
-// print fact DATE TIME
-//
-// $event - event containing the date/age
-// $record - the person (or couple) whose ages should be printed
-// $anchor option to print a link to calendar
-// $time option to print TIME value
+/**
+ * Print fact DATE/TIME
+ *
+ * @param WT_Fact         $event  event containing the date/age
+ * @param WT_GedcomRecord $record the person (or couple) whose ages should be printed
+ * @param boolean         $anchor option to print a link to calendar
+ * @param boolean         $time   option to print TIME value
+ *
+ * @return string
+ */
 function format_fact_date(WT_Fact $event, WT_GedcomRecord $record, $anchor=false, $time=false) {
 	global $pid, $SEARCH_SPIDER, $SHOW_PARENTS_AGE;
 
@@ -701,8 +713,8 @@ function format_fact_date(WT_Fact $event, WT_GedcomRecord $record, $anchor=false
 
 	// Calculated age
 	if (preg_match('/2 DATE (.+)/', $factrec, $match)) {
-		$date=new WT_Date($match[1]);
-		$html.=' '.$date->Display($anchor && !$SEARCH_SPIDER);
+		$date = new WT_Date($match[1]);
+		$html .= ' ' . $date->display($anchor && !$SEARCH_SPIDER);
 		// time
 		if ($time) {
 			$timerec=get_sub_record(2, '2 TIME', $factrec);
@@ -807,16 +819,19 @@ function format_fact_date(WT_Fact $event, WT_GedcomRecord $record, $anchor=false
 	}
 	return $html;
 }
+
 /**
-* print fact PLACe TEMPle STATus
-*
-* @param Event $event gedcom fact record
-* @param boolean $anchor option to print a link to placelist
-* @param boolean $sub option to print place subrecords
-* @param boolean $lds option to print LDS TEMPle and STATus
-*/
+ * print fact PLACe TEMPle STATus
+ *
+ * @param WT_Fact $event       gedcom fact record
+ * @param boolean $anchor      to print a link to placelist
+ * @param boolean $sub_records to print place subrecords
+ * @param boolean $lds         to print LDS TEMPle and STATus
+ *
+ * @return string HTML
+ */
 function format_fact_place(WT_Fact $event, $anchor=false, $sub_records=false, $lds=false) {
-	global $SHOW_PEDIGREE_PLACES, $SHOW_PEDIGREE_PLACES_SUFFIX, $SEARCH_SPIDER;
+	global $SEARCH_SPIDER;
 
 	if ($anchor) {
 		// Show the full place name, for facts/events tab
@@ -843,21 +858,21 @@ function format_fact_place(WT_Fact $event, $anchor=false, $sub_records=false, $l
 			$cts = preg_match('/\d LATI (.*)/', $placerec, $match);
 			if ($cts>0) {
 				$map_lati=$match[1];
-				$html.='<br><span class="label label-info">'.WT_Gedcom_Tag::getLabel('LATI').': </span>'.$map_lati;
+				$html .= '<br><span class="label">' . WT_Gedcom_Tag::getLabel('LATI') . ': </span>' . $map_lati;
 			}
-			$map_long="";
+			$map_long = '';
 			$cts = preg_match('/\d LONG (.*)/', $placerec, $match);
-			if ($cts>0) {
-				$map_long=$match[1];
-				$html.=' <span class="label label-info">'.WT_Gedcom_Tag::getLabel('LONG').': </span>'.$map_long;
+			if ($cts > 0) {
+				$map_long = $match[1];
+				$html .= ' <span class="label">' . WT_Gedcom_Tag::getLabel('LONG') . ': </span>' . $map_long;
+				
 			}
-			if ($map_lati && $map_long && empty($SEARCH_SPIDER)) {
-				$map_lati=trim(strtr($map_lati, "NSEW,�", " - -. ")); // S5,6789 ==> -5.6789
-				$map_long=trim(strtr($map_long, "NSEW,�", " - -. ")); // E3.456� ==> 3.456
-				$html.=' <a target="_BLANK" href="'."//www.mapquest.com/maps/map.adp?searchtype=address&amp;formtype=latlong&amp;latlongtype=decimal&amp;latitude={$map_lati}&amp;longitude={$map_long}".'" class="icon-mapquest" title="MapQuest™"></a>';
-				$html.=' <a target="_BLANK" href="'."//maps.google.com/maps?q={$map_lati},{$map_long}(".rawurlencode($event->getPlace()->getGedcomName()).")".'" class="icon-googlemaps" title="'.WT_I18N::translate('Google Maps™').'"></a>';
-				$html.=' <a target="_BLANK" href="'."//www.multimap.com/map/browse.cgi?lat={$map_lati}&amp;lon={$map_long}&amp;scale=&amp;icon=x".'" class="icon-bing" title="Bing Maps™"></a>';
-				$html.=' <a target="_BLANK" href="'."//www.terraserver.com/imagery/image_gx.asp?cpx={$map_long}&amp;cpy={$map_lati}&amp;res=30&amp;provider_id=340".'" class="icon-terraserver" title="TerraServer™"></a>';
+			if ($map_lati && $map_long) {
+				$map_lati = trim(strtr($map_lati, "NSEW,�", " - -. ")); // S5,6789 ==> -5.6789
+				$map_long = trim(strtr($map_long, "NSEW,�", " - -. ")); // E3.456� ==> 3.456
+				$html .= ' <a rel="nofollow" href="https://maps.google.com/maps?q=' . $map_lati . ',' . $map_long . '" class="icon-googlemaps" title="' . WT_I18N::translate('Google Maps™') . '"></a>';
+				$html .= ' <a rel="nofollow" href="https://www.bing.com/maps/?lvl=15&cp=' . $map_lati . '~' . $map_long . '" class="icon-bing" title="' . WT_I18N::translate('Bing Maps™') . '"></a>';
+				$html .= ' <a rel="nofollow" href="https://www.openstreetmap.org/#map=15/' . $map_lati . '/' . $map_long . '" class="icon-osm" title="' . WT_I18N::translate('OpenStreetMap™') . '"></a>';
 			}
 			if (preg_match('/\d NOTE (.*)/', $placerec, $match)) {
 				$html .= '<br>' . print_fact_notes($placerec, 3);
@@ -866,14 +881,13 @@ function format_fact_place(WT_Fact $event, $anchor=false, $sub_records=false, $l
 	}
 	if ($lds) {
 		if (preg_match('/2 TEMP (.*)/', $event->getGedcom(), $match)) {
-			$tcode=trim($match[1]);
 			$html.='<br>'.WT_I18N::translate('LDS temple').': '.WT_Gedcom_Code_Temp::templeName($match[1]);
 		}
 		if (preg_match('/2 STAT (.*)/', $event->getGedcom(), $match)) {
 			$html.='<br>'.WT_I18N::translate('Status').': '.WT_Gedcom_Code_Stat::statusName($match[1]);
 			if (preg_match('/3 DATE (.*)/', $event->getGedcom(), $match)) {
 				$date=new WT_Date($match[1]);
-				$html.=', '.WT_Gedcom_Tag::getLabel('STAT:DATE').': '.$date->Display(false);
+				$html.=', '.WT_Gedcom_Tag::getLabel('STAT:DATE').': '.$date->display();
 			}
 		}
 	}
@@ -881,11 +895,17 @@ function format_fact_place(WT_Fact $event, $anchor=false, $sub_records=false, $l
 }
 
 /**
-* Check for facts that may exist only once for a certain record type.
-* If the fact already exists in the second array, delete it from the first one.
-*/
+ * Check for facts that may exist only once for a certain record type.
+ * If the fact already exists in the second array, delete it from the first one.
+ *
+ * @param string[]  $uniquefacts
+ * @param WT_Fact[] $recfacts
+ * @param string    $type
+ *
+ * @return string[]
+ */
 function CheckFactUnique($uniquefacts, $recfacts, $type) {
-	foreach ($recfacts as $indexval => $factarray) {
+	foreach ($recfacts as $factarray) {
 		$fact=false;
 		if (is_object($factarray)) {
 			/* @var $factarray Event */
@@ -909,13 +929,14 @@ function CheckFactUnique($uniquefacts, $recfacts, $type) {
 }
 
 /**
-* Print a new fact box on details pages
-* @param string $id the id of the person, family, source etc the fact will be added to
-* @param array $usedfacts an array of facts already used in this record
-* @param string $type the type of record INDI, FAM, SOUR etc
-*/
+ * Print a new fact box on details pages
+ *
+ * @param string $id        the id of the person, family, source etc the fact will be added to
+ * @param array  $usedfacts an array of facts already used in this record
+ * @param string $type      the type of record INDI, FAM, SOUR etc
+ */
 function print_add_new_fact($id, $usedfacts, $type) {
-	global $WT_SESSION;
+	global $WT_SESSION, $WT_TREE;
 
 	// -- Add from clipboard
 	if ($WT_SESSION->clipboard) {
@@ -933,7 +954,7 @@ function print_add_new_fact($id, $usedfacts, $type) {
 				// TODO use the event class to store/parse the clipboard events
 				if (preg_match('/^2 DATE (.+)/m', $fact['factrec'], $match)) {
 					$tmp=new WT_Date($match[1]);
-					echo '; ', $tmp->minDate()->Format('%Y');
+					echo '; ', $tmp->minDate()->format('%Y');
 				}
 				if (preg_match('/^2 PLAC ([^,\n]+)/m', $fact['factrec'], $match)) {
 					echo '; ', $match[1];
@@ -951,29 +972,29 @@ function print_add_new_fact($id, $usedfacts, $type) {
 	// -- Add from pick list
 	switch ($type) {
 	case "INDI":
-		$addfacts   =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'INDI_FACTS_ADD'),    -1, PREG_SPLIT_NO_EMPTY);
-		$uniquefacts=preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'INDI_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
-		$quickfacts =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'INDI_FACTS_QUICK'),  -1, PREG_SPLIT_NO_EMPTY);
+		$addfacts   =preg_split("/[, ;:]+/", $WT_TREE->getPreference('INDI_FACTS_ADD'),    -1, PREG_SPLIT_NO_EMPTY);
+		$uniquefacts=preg_split("/[, ;:]+/", $WT_TREE->getPreference('INDI_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
+		$quickfacts =preg_split("/[, ;:]+/", $WT_TREE->getPreference('INDI_FACTS_QUICK'),  -1, PREG_SPLIT_NO_EMPTY);
 		break;
 	case "FAM":
-		$addfacts   =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'FAM_FACTS_ADD'),     -1, PREG_SPLIT_NO_EMPTY);
-		$uniquefacts=preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'FAM_FACTS_UNIQUE'),  -1, PREG_SPLIT_NO_EMPTY);
-		$quickfacts =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'FAM_FACTS_QUICK'),   -1, PREG_SPLIT_NO_EMPTY);
+		$addfacts   =preg_split("/[, ;:]+/", $WT_TREE->getPreference('FAM_FACTS_ADD'),     -1, PREG_SPLIT_NO_EMPTY);
+		$uniquefacts=preg_split("/[, ;:]+/", $WT_TREE->getPreference('FAM_FACTS_UNIQUE'),  -1, PREG_SPLIT_NO_EMPTY);
+		$quickfacts =preg_split("/[, ;:]+/", $WT_TREE->getPreference('FAM_FACTS_QUICK'),   -1, PREG_SPLIT_NO_EMPTY);
 		break;
 	case "SOUR":
-		$addfacts   =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'SOUR_FACTS_ADD'),    -1, PREG_SPLIT_NO_EMPTY);
-		$uniquefacts=preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'SOUR_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
-		$quickfacts =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'SOUR_FACTS_QUICK'),  -1, PREG_SPLIT_NO_EMPTY);
+		$addfacts   =preg_split("/[, ;:]+/", $WT_TREE->getPreference('SOUR_FACTS_ADD'),    -1, PREG_SPLIT_NO_EMPTY);
+		$uniquefacts=preg_split("/[, ;:]+/", $WT_TREE->getPreference('SOUR_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
+		$quickfacts =preg_split("/[, ;:]+/", $WT_TREE->getPreference('SOUR_FACTS_QUICK'),  -1, PREG_SPLIT_NO_EMPTY);
 		break;
 	case "NOTE":
-		$addfacts   =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'NOTE_FACTS_ADD'),    -1, PREG_SPLIT_NO_EMPTY);
-		$uniquefacts=preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'NOTE_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
-		$quickfacts =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'NOTE_FACTS_QUICK'),  -1, PREG_SPLIT_NO_EMPTY);
+		$addfacts   =preg_split("/[, ;:]+/", $WT_TREE->getPreference('NOTE_FACTS_ADD'),    -1, PREG_SPLIT_NO_EMPTY);
+		$uniquefacts=preg_split("/[, ;:]+/", $WT_TREE->getPreference('NOTE_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
+		$quickfacts =preg_split("/[, ;:]+/", $WT_TREE->getPreference('NOTE_FACTS_QUICK'),  -1, PREG_SPLIT_NO_EMPTY);
 		break;
 	case "REPO":
-		$addfacts   =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'REPO_FACTS_ADD'),    -1, PREG_SPLIT_NO_EMPTY);
-		$uniquefacts=preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'REPO_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
-		$quickfacts =preg_split("/[, ;:]+/", get_gedcom_setting(WT_GED_ID, 'REPO_FACTS_QUICK'),  -1, PREG_SPLIT_NO_EMPTY);
+		$addfacts   =preg_split("/[, ;:]+/", $WT_TREE->getPreference('REPO_FACTS_ADD'),    -1, PREG_SPLIT_NO_EMPTY);
+		$uniquefacts=preg_split("/[, ;:]+/", $WT_TREE->getPreference('REPO_FACTS_UNIQUE'), -1, PREG_SPLIT_NO_EMPTY);
+		$quickfacts =preg_split("/[, ;:]+/", $WT_TREE->getPreference('REPO_FACTS_QUICK'),  -1, PREG_SPLIT_NO_EMPTY);
 		break;
 	default:
 		return;
@@ -984,13 +1005,16 @@ function print_add_new_fact($id, $usedfacts, $type) {
 	foreach ($addfacts as $addfact) {
 		$translated_addfacts[$addfact] = WT_Gedcom_Tag::getLabel($addfact);
 	}
-	uasort($translated_addfacts, 'factsort');
+	uasort($translated_addfacts, function ($x, $y) {
+		return WT_I18N::strcasecmp(WT_I18N::translate($x), WT_I18N::translate($y));
+	});
 	echo '<tr><td class="descriptionbox">';
 	echo WT_I18N::translate('Fact or event');
 	echo help_link('add_facts'), '</td>';
 	echo '<td class="optionbox wrap">';
 	echo '<form method="get" name="newfactform" action="?" onsubmit="return false;">';
 	echo '<select id="newfact" name="newfact">';
+	echo '<option value="" disabled selected>' . WT_I18N::translate('&lt;select&gt;') . '</option>';
 	foreach ($translated_addfacts as $fact=>$fact_name) {
 		echo '<option value="', $fact, '">', $fact_name, '</option>';
 	}
@@ -1007,10 +1031,8 @@ function print_add_new_fact($id, $usedfacts, $type) {
 }
 
 /**
-* javascript declaration for calendar popup
-*
-* @param none
-*/
+ * javascript declaration for calendar popup
+ */
 function init_calendar_popup() {
 	global $WEEK_START, $controller;
 
@@ -1042,25 +1064,51 @@ function init_calendar_popup() {
 	');
 }
 
-function print_findindi_link($element_id, $indiname='') {
-	return '<a href="#" onclick="findIndi(document.getElementById(\''.$element_id.'\'), document.getElementById(\''.$indiname.'\'), \''.WT_GEDURL.'\'); return false;" class="icon-button_indi" title="'.WT_I18N::translate('Find an individual').'"></a>';
+/**
+ * @param string $element_id
+ * @param string $indiname
+ * @param string $ged
+ *
+ * @return string
+ */
+function print_findindi_link($element_id, $indiname='', $ged=WT_GEDCOM) {
+	return '<a href="#" onclick="findIndi(document.getElementById(\''.$element_id.'\'), document.getElementById(\''.$indiname.'\'), \'' . WT_Filter::escapeHtml($ged) . '\'); return false;" class="icon-button_indi" title="'.WT_I18N::translate('Find an individual').'"></a>';
 }
 
+/**
+ * @param string $element_id
+ *
+ * @return string
+ */
 function print_findplace_link($element_id) {
-	return '<a href="#" onclick="findPlace(document.getElementById(\''.$element_id.'\'), \''.WT_GEDURL.'\'); return false;" class="icon-button_place" title="'.WT_I18N::translate('Find a place').'"></a>';
+	return '<a href="#" onclick="findPlace(document.getElementById(\''.$element_id.'\'), WT_GEDCOM); return false;" class="icon-button_place" title="'.WT_I18N::translate('Find a place').'"></a>';
 }
 
+/**
+ * @param string $element_id
+ *
+ * @return string
+ */
 function print_findfamily_link($element_id) {
-	return '<a href="#" onclick="findFamily(document.getElementById(\''.$element_id.'\'), \''.WT_GEDURL.'\'); return false;" class="icon-button_family" title="'.WT_I18N::translate('Find a family').'"></a>';
+	return '<a href="#" onclick="findFamily(document.getElementById(\''.$element_id.'\'), WT_GEDCOM); return false;" class="icon-button_family" title="'.WT_I18N::translate('Find a family').'"></a>';
 }
 
+/**
+ * @param string $element_id
+ *
+ * @return string
+ */
 function print_specialchar_link($element_id) {
-	return '<span onclick="findSpecialChar(document.getElementById(\''.$element_id.'\')); updatewholename(); return false;" class="icon-button_keyboard" title="'.WT_I18N::translate('Find a special character').'"></span>';
+	return '<span onclick="findSpecialChar(document.getElementById(\''.$element_id.'\')); if (window.updatewholename) { updatewholename(); } return false;" class="icon-button_keyboard" title="'.WT_I18N::translate('Find a special character').'"></span>';
 }
 
+/**
+ * @param string   $element_id
+ * @param string[] $choices
+ */
 function print_autopaste_link($element_id, $choices) {
 	echo '<small>';
-	foreach ($choices as $indexval => $choice) {
+	foreach ($choices as $choice) {
 		echo '<span onclick="document.getElementById(\'', $element_id, '\').value=';
 		echo '\'', $choice, '\';';
 		echo " return false;\">", $choice, '</span> ';
@@ -1068,34 +1116,69 @@ function print_autopaste_link($element_id, $choices) {
 	echo '</small>';
 }
 
+/**
+ * @param string $element_id
+ * @param string $sourcename
+ *
+ * @return string
+ */
 function print_findsource_link($element_id, $sourcename='') {
-	return '<a href="#" onclick="findSource(document.getElementById(\''.$element_id.'\'), document.getElementById(\''.$sourcename.'\'), \''.WT_GEDURL.'\'); return false;" class="icon-button_source" title="'.WT_I18N::translate('Find a source').'"></a>';
+	return '<a href="#" onclick="findSource(document.getElementById(\''.$element_id.'\'), document.getElementById(\''.$sourcename.'\'), WT_GEDCOM); return false;" class="icon-button_source" title="'.WT_I18N::translate('Find a source').'"></a>';
 }
 
+/**
+ * @param string $element_id
+ * @param string $notename
+ *
+ * @return string
+ */
 function print_findnote_link($element_id, $notename='') {
-	return '<a href="#" onclick="findnote(document.getElementById(\''.$element_id.'\'), document.getElementById(\''.$notename.'\'), \''.WT_GEDURL.'\'); return false;" class="icon-button_note" title="'.WT_I18N::translate('Find a note').'"></a>';
+	return '<a href="#" onclick="findnote(document.getElementById(\''.$element_id.'\'), document.getElementById(\''.$notename.'\'), \'WT_GEDCOM\'); return false;" class="icon-button_note" title="'.WT_I18N::translate('Find a shared note').'"></a>';
 }
 
+/**
+ * @param string $element_id
+ *
+ * @return string
+ */
 function print_findrepository_link($element_id) {
-	return '<a href="#" onclick="findRepository(document.getElementById(\''.$element_id.'\'), \''.WT_GEDURL.'\'); return false;" class="icon-button_repository" title="'.WT_I18N::translate('Find a repository').'"></a>';
+	return '<a href="#" onclick="findRepository(document.getElementById(\''.$element_id.'\'), WT_GEDCOM); return false;" class="icon-button_repository" title="'.WT_I18N::translate('Find a repository').'"></a>';
 }
 
+/**
+ * @param string $element_id
+ * @param string $choose
+ *
+ * @return string
+ */
 function print_findmedia_link($element_id, $choose='') {
-	return '<a href="#" onclick="findMedia(document.getElementById(\''.$element_id.'\'), \''.$choose.'\', \''.WT_GEDURL.'\'); return false;" class="icon-button_media" title="'.WT_I18N::translate('Find a media object').'"></a>';
+	return '<a href="#" onclick="findMedia(document.getElementById(\''.$element_id.'\'), \''.$choose.'\', WT_GEDCOM); return false;" class="icon-button_media" title="'.WT_I18N::translate('Find a media object').'"></a>';
 }
 
+/**
+ * @param string $element_id
+ *
+ * @return string
+ */
 function print_findfact_link($element_id) {
-	return '<a href="#" onclick="findFact(document.getElementById(\''.$element_id.'\'), \''.WT_GEDURL.'\'); return false;" class="icon-button_find_facts" title="'.WT_I18N::translate('Find a fact or event').'"></a>';
+	return '<a href="#" onclick="findFact(document.getElementById(\''.$element_id.'\'), WT_GEDCOM); return false;" class="icon-button_find_facts" title="'.WT_I18N::translate('Find a fact or event').'"></a>';
 }
 
-// Summary of LDS ordinances
-function get_lds_glance(WT_Individual $indi) {
-	$BAPL = $indi->getFacts('BAPL') ? 'B' : '_';
-	$ENDL = $indi->getFacts('ENDL') ? 'E' : '_';
-	$SLGC = $indi->getFacts('SLGC') ? 'C' : '_';
+/**
+ * Summary of LDS ordinances.
+
+ *
+*@param WT_Individual $individual
+ *
+*@return string
+ */
+function get_lds_glance(WT_Individual $individual) {
+	$BAPL = $individual->getFacts('BAPL') ? 'B' : '_';
+	$ENDL = $individual->getFacts('ENDL') ? 'E' : '_';
+	$SLGC = $individual->getFacts('SLGC') ? 'C' : '_';
 	$SLGS = '_';
 
-	foreach ($indi->getSpouseFamilies() as $family) {
+	foreach ($individual->getSpouseFamilies() as $family) {
 		if ($family->getFacts('SLGS')) {
 			$SLGS = '';
 		}

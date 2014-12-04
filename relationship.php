@@ -2,10 +2,10 @@
 // Calculates the relationship between two individuals in the gedcom
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'relationship.php');
 require './includes/session.php';
@@ -35,7 +35,7 @@ $followspouse = WT_Filter::getBool('followspouse');
 $asc          = WT_Filter::getBool('asc');
 
 $asc = $asc ? -1 : 1;
-
+$Dbwidth=$bwidth;
 if (!$show_full) {
 	$bwidth  = $cbwidth;
 	$bheight = $cbheight;
@@ -52,8 +52,8 @@ $person1=WT_Individual::getInstance($pid1);
 $person2=WT_Individual::getInstance($pid2);
 
 $controller
-	->addInlineJavascript('var pastefield; function paste_id(value) { pastefield.value=value; }') // For the 'find indi' link
-	->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js');
+	->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+	->addInlineJavascript('autocomplete();');
 
 if ($person1 && $person1->canShowName() && $person2 && $person2->canShowName()) {
 	$controller
@@ -94,7 +94,7 @@ if ($person1 && $person1->canShowName() && $person2 && $person2->canShowName()) 
 					<?php echo WT_I18N::translate('Individual 1'); ?>
 				</td>
 				<td class="optionbox vmiddle">
-					<input tabindex="1" class="pedigree_form" type="text" name="pid1" id="pid1" size="3" value="<?php echo $pid1; ?>">
+					<input tabindex="1" class="pedigree_form" data-autocomplete-type="INDI" type="text" name="pid1" id="pid1" size="3" value="<?php echo $pid1; ?>">
 					<?php echo print_findindi_link('pid1'); ?>
 				</td>
 				<td class="descriptionbox">
@@ -109,7 +109,7 @@ if ($person1 && $person1->canShowName() && $person2 && $person2->canShowName()) 
 					<?php echo WT_I18N::translate('Individual 2'); ?>
 				</td>
 				<td class="optionbox vmiddle">
-					<input tabindex="2" class="pedigree_form" type="text" name="pid2" id="pid2" size="3" value="<?php echo $pid2; ?>">
+					<input tabindex="2" class="pedigree_form" data-autocomplete-type="INDI" type="text" name="pid2" id="pid2" size="3" value="<?php echo $pid2; ?>">
 					<?php echo print_findindi_link('pid2'); ?>
 				</td>
 				<td class="descriptionbox">
@@ -161,7 +161,7 @@ if ($person1 && $person1->canShowName() && $person2 && $person2->canShowName()) 
 $maxyoffset = $Dbaseyoffset;
 if ($person1 && $person2) {
 	if (!$disp) {
-		print_privacy_error();
+		echo '<div class="error">', WT_I18N::translate('This information is private and cannot be shown.'), '</div>';
 	} elseif (!$node) {
 		if ($path_to_find==0) {
 			echo '<p class="error">', WT_I18N::translate('No link between the two individuals could be found.'), '</p>';
@@ -235,11 +235,16 @@ if ($person1 && $person2) {
 			foreach ($node['path'] as $index=>$person) {
 				$linex = $xoffset;
 				$liney = $yoffset;
-				$mfstyle = 'NN';
 				switch ($person->getSex()) {
-				case 'M': $mfstyle='';   break;
-				case 'F': $mfstyle='F';  break;
-				case 'U': $mfstyle='NN'; break;
+				case 'M':
+					$mfstyle='';
+					break;
+				case 'F':
+					$mfstyle='F';
+					break;
+				default:
+					$mfstyle='NN';
+					break;
 				}
 				switch ($node['relations'][$index]) {
 				case 'father':
@@ -282,6 +287,7 @@ if ($person1 && $person2) {
 						$joiny = $joiny+$asc*$lh;
 						echo "<div id=\"joinb", $index, "\" style=\"position:absolute; ", $TEXT_DIRECTION=='ltr'?'left':'right', ':', $joinx + $Dbxspacing, 'px; top:', $joiny + $Dbyspacing, "px;\" align=\"center\"><img src=\"", $WT_IMAGES["hline"], "\" align=\"left\" width=\"", $joinw, "\" height=\"", $joinh, "\" alt=\"\"></div>";
 					}
+					else $change_count='';
 					$previous='parent';
 					break;
 				case 'brother':
@@ -344,6 +350,7 @@ if ($person1 && $person2) {
 						$joiny = $joiny-$asc*$lh;
 						echo '<div id="joinb', $index, '" style="position:absolute; ', $TEXT_DIRECTION=='ltr'?'left':'right', ':', $joinx+$Dbxspacing, 'px; top:', $joiny+$Dbyspacing, 'px;" align="center"><img src="', $WT_IMAGES['hline'], '" align="left" width="', $joinw, '" height="', $joinh, '" alt=""></div>';
 					}
+					else $change_count='';
 					$previous='child';
 					break;
 				}
@@ -379,7 +386,7 @@ if ($person1 && $person2) {
 				$zIndex = 200 - ($colNum * $depth + $rowNum);
 
 				echo '<div style="position:absolute; ', $TEXT_DIRECTION=='ltr'?'left':'right', ':', $pxoffset, 'px; top:', $pyoffset, 'px; width:', $Dbwidth, 'px; height:', $Dbheight, 'px; z-index:', $zIndex, ';">';
-				print_pedigree_person($person, 1);
+				print_pedigree_person($person);
 				echo '</div>';
 			}
 		}
@@ -391,11 +398,10 @@ echo '</div>'; // close #relationshippage
 // The contents of <div id="relationship_chart"> use relative positions.
 // Need to expand the div to include the children, or we'll overlap the footer.
 // $maxyoffset is the top edge of the lowest box.
-$controller
-	->addInlineJavascript('
-		relationship_chart_div = document.getElementById("relationship_chart");
-		if (relationship_chart_div) {
-			relationship_chart_div.style.height = "'.($maxyoffset+$Dbheight+20).'px";
-			relationship_chart_div.style.width = "100%";
-		}'
-	);
+$controller->addInlineJavascript('
+	relationship_chart_div = document.getElementById("relationship_chart");
+	if (relationship_chart_div) {
+		relationship_chart_div.style.height = "'.($maxyoffset+$Dbheight+20).'px";
+		relationship_chart_div.style.width = "100%";
+	}'
+);

@@ -2,10 +2,7 @@
 // Batch update module
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
-//
-// Derived from PhpGedView
-// Copyright (C) 2008 PGV Development Team.  All rights reserved.
+// Copyright (C) 2014 Greg Roach
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,19 +16,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use WT\Auth;
 
-if (!WT_USER_GEDCOM_ADMIN) {
-	header('Location: '.WT_SERVER_NAME.WT_SCRIPT_PATH.'module.php?mod=batch_update');
-	exit;
-}
-
-require WT_ROOT.'includes/functions/functions_edit.php';
+require_once WT_ROOT . 'includes/functions/functions_edit.php';
 
 class batch_update {
 	var $plugin   =null; // Form parameter: chosen plugin
@@ -74,7 +63,7 @@ class batch_update {
 		}
 		$html.='</td></tr>';
 
-		if (!get_user_setting(WT_USER_ID, 'auto_accept'))
+		if (!Auth::user()->getPreference('auto_accept'))
 			$html.='<tr><td colspan="2" class="warning">'.WT_I18N::translate('Your user account does not have “automatically approve changes” enabled.  You will only be able to change one record at a time.').'</td></tr>';
 
 		// If a plugin is selected, display the details
@@ -98,7 +87,7 @@ class batch_update {
 						'</tr><tr><td valign="top">'.
 						'<br>'.implode('<br>',$this->PLUGIN->getActionButtons($this->curr_xref, $this->record)).'<br>'.
 						'</td><td dir="ltr" align="left">'.
-						$this->PLUGIN->getActionPreview($this->record);
+						$this->PLUGIN->getActionPreview($this->record) .
 						'</td></tr>';
 				} else {
 					$html.='<tr><td class="accepted" colspan=2>'.WT_I18N::translate('Nothing found.').'</td></tr>';
@@ -110,7 +99,7 @@ class batch_update {
 	}
 
 	// Constructor - initialise variables and validate user-input
-	function __construct() {
+	public function __construct() {
 		$this->plugins=self::getPluginList();    // List of available plugins
 		$this->plugin =WT_Filter::get('plugin'); // User parameters
 		$this->xref   =WT_Filter::get('xref', WT_REGEX_XREF);
@@ -124,8 +113,6 @@ class batch_update {
 			$this->getAllXrefs();
 
 			switch ($this->action) {
-			case '':
-				break;
 			case 'update':
 				$record=self::getLatestRecord($this->xref, $this->all_xrefs[$this->xref]);
 				if ($this->PLUGIN->doesRecordNeedUpdate($this->xref, $record)) {
@@ -156,25 +143,7 @@ class batch_update {
 				}
 				$this->xref='';
 				return;
-			case 'delete':
-				$record=self::getLatestRecord($this->xref, $this->all_xrefs[$this->xref]);
-				if ($this->PLUGIN->doesRecordNeedUpdate($this->xref, $record)) {
-					WT_GedcomRecord::getInstance($this->xref)->deleteRecord();
-				}
-				$this->xref=$this->findNextXref($this->xref);
-				break;
-			case 'delete_all':
-				foreach ($this->all_xrefs as $xref=>$type) {
-					$record=self::getLatestRecord($xref, $type);
-					if ($this->PLUGIN->doesRecordNeedUpdate($xref, $record)) {
-						WT_GedcomRecord::getInstance($this->xref)->deleteRecord();
-					}
-				}
-				$xref->xref='';
-				return;
 			default:
-				// Anything else will be handled by the plugin
-				$this->PLUGIN->performAction($this->xref, $this->record, $this->action, $this->data);
 				break;
 			}
 
@@ -341,14 +310,14 @@ class base_plugin {
 		return
 			'<tr><th>'.WT_I18N::translate('Do not update the “last change” record').'</th>'.
 			'<td><select name="chan" onchange="this.form.submit();">'.
-			'<option value="yes"' . ($this->chan ? '' : ' selected="selected"') . '>'.WT_I18N::translate('yes') .'</option>'.
-			'<option value="no"'  . ($this->chan ? ' selected="selected"' : '') . '>'.WT_I18N::translate('no').'</option>'.
+			'<option value="0"' . ($this->chan ? '' : ' selected="selected"') . '>'.WT_I18N::translate('yes') .'</option>'.
+			'<option value="1"' . ($this->chan ? ' selected="selected"' : '') . '>'.WT_I18N::translate('no').'</option>'.
 			'</select></td></tr>';
 	}
 
 	// Default buttons are update and update_all
 	function getActionButtons($xref) {
-		if (get_user_setting(WT_USER_ID, 'auto_accept')) {
+		if (Auth::user()->getPreference('auto_accept')) {
 			return array(
 				batch_update::createSubmitButton(WT_I18N::translate('Update'),     $xref, 'update'),
 				batch_update::createSubmitButton(WT_I18N::translate('Update all'), $xref, 'update_all')
@@ -365,7 +334,7 @@ class base_plugin {
 		$old_lines=preg_split('/[\n]+/', $record->getGedcom());
 		$new_lines=preg_split('/[\n]+/', $this->updateRecord($record->getXref(), $record->getGedcom()));
 		// Find matching lines using longest-common-subsequence algorithm.
-		$lcs=self::LCS($old_lines, $new_lines, 0, count($old_lines)-1, 0, count($new_lines)-1);
+		$lcs=self::LongestCommonSubsequence($old_lines, $new_lines, 0, count($old_lines)-1, 0, count($new_lines)-1);
 
 		$diff_lines=array();
 		$last_old=-1;
@@ -393,22 +362,22 @@ class base_plugin {
 	}
 
 	// Longest Common Subsequence.
-	static function LCS($X, $Y, $x1, $x2, $y1, $y2) {
+	private static function LongestCommonSubsequence($X, $Y, $x1, $x2, $y1, $y2) {
 		if ($x2-$x1>=0 && $y2-$y1>=0) {
 			if ($X[$x1]==$Y[$y1]) {
 				// Match at start of sequence
-				$tmp=self::LCS($X, $Y, $x1+1, $x2, $y1+1, $y2);
+				$tmp=self::LongestCommonSubsequence($X, $Y, $x1+1, $x2, $y1+1, $y2);
 				array_unshift($tmp, array($x1, $y1));
 				return $tmp;
 			} elseif ($X[$x2]==$Y[$y2]) {
 				// Match at end of sequence
-				$tmp=self::LCS($X, $Y, $x1, $x2-1, $y1, $y2-1);
+				$tmp=self::LongestCommonSubsequence($X, $Y, $x1, $x2-1, $y1, $y2-1);
 				array_push($tmp, array($x2, $y2));
 				return $tmp;
 			} else {
 				// No match.  Look for subsequences
-				$tmp1=self::LCS($X, $Y, $x1, $x2, $y1, $y2-1);
-				$tmp2=self::LCS($X, $Y, $x1, $x2-1, $y1, $y2);
+				$tmp1=self::LongestCommonSubsequence($X, $Y, $x1, $x2, $y1, $y2-1);
+				$tmp2=self::LongestCommonSubsequence($X, $Y, $x1, $x2-1, $y1, $y2);
 				return count($tmp1) > count($tmp2) ? $tmp1 : $tmp2;
 			}
 		} else {
@@ -417,14 +386,11 @@ class base_plugin {
 		}
 	}
 
-	// Default handler for plugin with no custom actions.
-	function performAction($xref, $gedrec, $action, $data) {
-	}
-
 	// Decorate inserted/deleted text
 	static function decorateInsertedText($text) {
 		return '<span class="added_text">'.$text.'</span>';
 	}
+
 	static function decorateDeletedText($text) {
 		return '<span class="deleted_text">'.$text.'</span>';
 	}

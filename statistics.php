@@ -5,10 +5,10 @@
 // age -> periodes of 10 years (different for 0-1,1-5,5-10,10-20 etc)
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,7 +22,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'statistics.php');
 require './includes/session.php';
@@ -32,9 +34,9 @@ $tab  = WT_Filter::getInteger('tab', 0, 3);
 $ajax = WT_Filter::getBool('ajax');
 
 if (!$ajax) {
-	$controller=new WT_Controller_Page();
+	$controller = new WT_Controller_Page();
 	$controller->setPageTitle(WT_I18N::translate('Statistics'))
-		->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js')
+		->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
 		->addInlineJavascript('
 			jQuery("#statistics_chart").css("visibility", "visible");
 			jQuery("#statistics_chart").tabs({
@@ -42,11 +44,13 @@ if (!$ajax) {
 					jQuery("#loading-indicator").removeClass("loading-image");
 				},
 				beforeLoad: function(event, ui) {
-					jQuery("#loading-indicator").addClass("loading-image");
 					// Only load each tab once
 					if (ui.tab.data("loaded")) {
 						event.preventDefault();
 						return;
+					}
+					else {
+						jQuery("#loading-indicator").addClass("loading-image");
 					}
 					ui.jqXHR.success(function() {
 						ui.tab.data("loaded", true);
@@ -73,10 +77,10 @@ if (!$ajax) {
 		'</div>', // statistics-page
 	'<br><br>';
 } else {
-	$controller=new WT_Controller_Ajax();
+	$controller = new WT_Controller_Ajax();
 	$controller
 		->pageHeader()
-		->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js')
+		->addInlineJavascript('autocomplete();')
 		->addInlineJavascript('jQuery("#loading-indicator").removeClass("loading-image");');
 	$stats = new WT_Stats($GEDCOM);
 	if ($tab==0) {
@@ -166,7 +170,7 @@ if (!$ajax) {
 			</tr>
 		</table>
 		<br>';
-		if (WT_USER_ID) {
+		if (Auth::check()) {
 			echo '<b>', WT_I18N::translate('Oldest living individuals'), '</b>
 			<table class="facts_table">
 				<tr>
@@ -430,24 +434,36 @@ if (!$ajax) {
 				var box = document.getElementById(sel);
 				box.style.display = 'none';
 				var box_m = document.getElementById(sel+'_m');
-				if (box_m) box_m.style.display = 'none';
+				if (box_m) {
+					box_m.style.display = 'none';
+				}
 				if (sel=='map_opt') {
 					var box_axes = document.getElementById('axes');
-					if (box_axes) box_axes.style.display = '';
+					if (box_axes) {
+						box_axes.style.display = '';
+					}
 					var box_zyaxes = document.getElementById('zyaxes');
-					if (box_zyaxes) box_zyaxes.style.display = '';
+					if (box_zyaxes) {
+						box_zyaxes.style.display = '';
+					}
 				}
 			}
 			function statusShow(sel) {
 				var box = document.getElementById(sel);
 				box.style.display = '';
 				var box_m = document.getElementById(sel+'_m');
-				if (box_m) box_m.style.display = 'none';
+				if (box_m) {
+					box_m.style.display = 'none';
+				}
 				if (sel=='map_opt') {
 					var box_axes = document.getElementById('axes');
-					if (box_axes) box_axes.style.display = 'none';
+					if (box_axes) {
+						box_axes.style.display = 'none';
+					}
 					var box_zyaxes = document.getElementById('zyaxes');
-					if (box_zyaxes) box_zyaxes.style.display = 'none';
+					if (box_zyaxes) {
+						box_zyaxes.style.display = 'none';
+					}
 				}
 			}
 			function statusShowSurname(x) {
@@ -466,11 +482,13 @@ if (!$ajax) {
 					jQuery(response).dialog({
 						modal: true,
 						width: 964,
-						closeText: ""
-					});
-					// Close the window when we click outside it.
-					jQuery(".ui-widget-overlay").on("click", function () {
-						jQuery("div:ui-dialog:visible").dialog("close");
+						open: function() {
+							var self = this;
+							// Close the window when we click outside it.
+							jQuery(".ui-widget-overlay").on("click", function () {
+								$(self).dialog('close');
+							});
+						}
 					});
 				});
 				return false;
@@ -528,10 +546,6 @@ if (!$ajax) {
 			if ($plottype == "14") echo ' checked="checked"';
 			echo " onclick=\"{statusEnable('z_sex'); statusHide('x_years'); statusHide('x_months'); statusHide('x_numbers'); statusHide('map_opt');}";
 			echo '"><label for="stat_14">', WT_I18N::translate('Month of birth of first child in a relation'), '</label><br>';
-			//echo '<input type="radio" id="stat_16" name="x-as" value="16"';
-			//if ($plottype == "16") echo ' checked="checked"';
-			//echo " onclick=\"{statusEnable('z_sex'); statusHide('x_years'); statusShow('x_months'); statusHide('x_numbers'); statusHide('map_opt');}";
-			//echo '"><label for="stat_16">', WT_I18N::translate('Months between marriage and first child'), '</label><br>';
 			echo '<input type="radio" id="stat_17" name="x-as" value="17"';
 			if ($plottype == "17") echo ' checked="checked"';
 			echo " onclick=\"{statusEnable('z_sex'); statusShow('x_years'); statusHide('x_months'); statusHide('x_numbers'); statusHide('map_opt');}";
@@ -615,7 +629,7 @@ if (!$ajax) {
 			<br>
 			</div>
 			<div id="surname_opt" style="display:none;">';
-			echo WT_Gedcom_Tag::getLabel('SURN'), help_link('google_chart_surname'), '<br><input type="text" name="SURN" size="20">';
+			echo WT_Gedcom_Tag::getLabel('SURN'), help_link('google_chart_surname'), '<br><input data-autocomplete-type="SURN" type="text" name="SURN" size="20">';
 			echo '<br>
 			</div>';
 			echo WT_I18N::translate('Geographical area');

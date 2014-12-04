@@ -4,10 +4,10 @@
 // Census information about an individual
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 // modified from tabledeleterow.js version 1.2 2006-02-21
 // mredkj.com
@@ -466,9 +466,6 @@ window.onload=fillInRows;
 // fillInRows - can be used to pre-load a table with a header, row, or rows
 function fillInRows() {
 	hasLoaded = true;
-	// create_header();
-	// insertRowToTable();
-	// addRowToTable();
 	if (TheCenYear!='') {
 		changeYear(TheCenYear);
 	}
@@ -607,10 +604,8 @@ function addRowToTable(num, pid, nam, mnam, label, gend, cond, dom, dob, age2, d
 	// Check if Census year filled in -------------
 	// var cctry = document.getElementById('censCtry').value;
 	var cyear = document.getElementById('censYear').value;
-	if (cyear!="choose") {
-		cyear=cyear;
-	} else {
-		alert ("You must choose a Census year first")
+	if (cyear == "choose") {
+		alert("You must choose a Census year first");
 		return;
 	}
 
@@ -795,18 +790,16 @@ function addRowToTable(num, pid, nam, mnam, label, gend, cond, dom, dob, age2, d
 		// *** NOTE ***
 		// *** This is then corrected when ChangeYear() function is run
 		// *** ChangeYear() is run each time Census Year is selected or changed
-		if (age2!="Age" && age2!=null) {
+		if (age2 != "Age" && age2 != null) {
 			// Check if Census year filled in -------------
-			if (cyear!="choose") {
-				cyear=cyear;
-			} else {
-				alert ("You must choose a Census year first")
+			if (cyear == "choose") {
+				alert("You must choose a Census year first");
 				return;
 			}
-			var diffage=(1901-cyear);
-			age=(age2-diffage);
+			var diffage = 1901 - cyear;
+			age = age2 - diffage;
 		} else {
-			age="-";
+			age = "-";
 		}
 
 		// add the row =======================================================
@@ -842,8 +835,6 @@ function addRowToTable(num, pid, nam, mnam, label, gend, cond, dom, dob, age2, d
 			}
 
 			// ---- Show Cell Columns =========================================
-			//var currcenyear = document.getElementById('censYear').value;
-			//changeCols(currcenyear);
 
 		// **C** Define Header Cell elements ==================================
 		if (iteration == 0) {
@@ -1270,7 +1261,7 @@ function addRowToTable(num, pid, nam, mnam, label, gend, cond, dom, dob, age2, d
 				txtInp_bic.style.fontSize="10px";
 				txtInp_bic.style.border='0px';
 				txtInp_bic.innerHTML = '<a href="#" title="'+TTEditBIC+'">'+HeaderBIC+'</a>';
-				txtInp_bic.setAttribute('id', '.b.'+HeaderBIC)
+				txtInp_bic.setAttribute('id', '.b.'+HeaderBIC);
 		// 53. Born outside England (SCO, IRE, WAL, FOReign ----------------------------
 			var txtInp_boe = document.createElement('div');
 				txtInp_boe.setAttribute('class', 'descriptionbox');
@@ -1278,7 +1269,7 @@ function addRowToTable(num, pid, nam, mnam, label, gend, cond, dom, dob, age2, d
 				txtInp_boe.style.fontSize="10px";
 				txtInp_boe.style.border='0px';
 				txtInp_boe.innerHTML = '<a href="#" title="'+TTEditBOE+'">'+HeaderBOE+'</a>';
-				txtInp_boe.setAttribute('id', '.b.'+HeaderBOE)
+				txtInp_boe.setAttribute('id', '.b.'+HeaderBOE);
 		// 54. Fathers Birth Place_2 ---------------------------------------------
 			var txtInp_fbirthpl2 = document.createElement('div');
 				txtInp_fbirthpl2.setAttribute('class', 'descriptionbox');
@@ -2200,10 +2191,6 @@ function addRowToTable(num, pid, nam, mnam, label, gend, cond, dom, dob, age2, d
 
 		// Extra Cells for Navigation =========================================
 		// 74. Extra 1. Delete Row Button -----------------------------------------
-			//var btnEl = document.createElement('input');
-			// btnEl.setAttribute('type', 'button');
-			// btnEl.setAttribute('value', 'x');
-			// btnEl.onclick = function () {deleteCurrentRow(this)};
 			var btnEl = document.createElement('button');
 			  var btnEltext = document.createTextNode('X');
 				btnEl.style.color='red';

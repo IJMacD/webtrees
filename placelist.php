@@ -2,7 +2,7 @@
 // Displays a place hierachy
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2002 to 2010 PGV Development Team. All rights reserved.
@@ -19,7 +19,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'placelist.php');
 require './includes/session.php';
@@ -40,7 +40,7 @@ if ($display=='hierarchy') {
 		$controller->setPageTitle(WT_I18N::translate('Place hierarchy'));
 	}
 } else {
-	$controller->setPageTitle(WT_I18N::translate('Place List'));
+	$controller->setPageTitle(WT_I18N::translate('Place list'));
 }
 
 $controller->pageHeader();
@@ -59,7 +59,7 @@ case 'list':
 		echo '<table class="list_table">';
 		echo '<tr><td class="list_label" ';
 		echo ' colspan="', $num_places>20 ? 3 : 2, '"><i class="icon-place"></i> ';
-		echo WT_I18N::translate('Place List');
+		echo WT_I18N::translate('Place list');
 		echo '</td></tr><tr><td class="list_value_wrap"><ul>';
 		foreach ($list_places as $n=>$list_place) {
 			echo '<li><a href="', $list_place->getURL(), '">', $list_place->getReverseName(), '</a></li>';
@@ -80,10 +80,11 @@ case 'list':
 	echo '<h4><a href="placelist.php?display=hierarchy">', WT_I18N::translate('Show places in hierarchy'), '</a></h4>';
 	break;
 case 'hierarchy':
-	$use_googlemap = array_key_exists('googlemap', WT_Module::getActiveModules()) && get_module_setting('googlemap', 'GM_PLACE_HIERARCHY');
-
-	if ($use_googlemap) {
-		require WT_ROOT.WT_MODULES_DIR.'googlemap/placehierarchy.php';
+	$all_modules = WT_Module::getActiveModules();
+	if (array_key_exists('googlemap', $all_modules)) {
+		$gm_module = $all_modules['googlemap'];
+	} else {
+		$gm_module = null;
 	}
 
 	// Find this place and its ID
@@ -107,11 +108,11 @@ case 'hierarchy':
 			echo ', <a href="', $parent_place->getURL(), '" dir="auto">', $parent_place->getPlaceName(), '</a>';
 			$parent_place=$parent_place->getParentPlace();
 		}
-		echo ', <a href="', WT_SCRIPT_NAME, '">', WT_I18N::translate('Top Level'), '</a>';
+		echo ', <a href="', WT_SCRIPT_NAME, '">', WT_I18N::translate('Top level'), '</a>';
 	}
 	echo '</h2>';
 
-	if ($use_googlemap) {
+	if ($gm_module && $gm_module->getSetting('GM_PLACE_HIERARCHY')) {
 		$linklevels='';
 		$placelevels='';
 		$place_names=array();
@@ -123,7 +124,7 @@ case 'hierarchy':
 				$placelevels = ', ' . $parent[$j] . $placelevels;
 			}
 		}
-		create_map($placelevels);
+		$gm_module->createMap($placelevels);
 	} elseif (array_key_exists('places_assistant', WT_Module::getActiveModules())) {
 		// Places Assistant is a custom/add-on module that was once part of the core code.
 		places_assistant_WT_Module::display_map($level, $parent);
@@ -148,7 +149,7 @@ case 'hierarchy':
 		}
 
 		echo '<li><a href="', $child_place->getURL(), '" class="list_item">', $child_place->getPlaceName(), '</a></li>';
-		if ($use_googlemap) {
+		if ($gm_module && $gm_module->getSetting('GM_PLACE_HIERARCHY')) {
 			list($tmp) =  explode(', ', $child_place->getGedcomName(), 2);
 			$place_names[$n]=$tmp;
 		}
@@ -240,9 +241,9 @@ case 'hierarchy':
 	}
 	echo '<h4><a href="placelist.php?display=list">', WT_I18N::translate('Show all places in a list'), '</a></h4>';
 
-	if ($use_googlemap) {
+	if ($gm_module && $gm_module->getSetting('GM_PLACE_HIERARCHY')) {
 		echo '<link type="text/css" href="', WT_STATIC_URL, WT_MODULES_DIR, 'googlemap/css/wt_v3_googlemap.css" rel="stylesheet">';
-		map_scripts($numfound, $level, $parent, $linklevels, $placelevels, $place_names);
+		$gm_module->mapScripts($numfound, $level, $parent, $linklevels, $placelevels, $place_names);
 	}
 	break;
 }

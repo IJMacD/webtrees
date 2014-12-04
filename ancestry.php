@@ -4,10 +4,10 @@
 // ($rootid=1, father=2, mother=3 ...)
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,17 +21,17 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'ancestry.php');
 require './includes/session.php';
 require_once WT_ROOT.'includes/functions/functions_print_lists.php';
 
-$controller=new WT_Controller_Ancestry();
+$controller = new WT_Controller_Ancestry();
 $controller
 	->pageHeader()
-	->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js')
-	->addInlineJavascript('var pastefield; function paste_id(value) { pastefield.value=value; }'); // For the 'find indi' link
+	->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+	->addInlineJavascript('autocomplete();');
 
 ?>
 <div id="ancestry-page">
@@ -46,7 +46,7 @@ $controller
 					<?php echo WT_I18N::translate('Individual'); ?>
 				</td>
 				<td class="optionbox">
-					<input class="pedigree_form" type="text" name="rootid" id="rootid" size="3" value="<?php echo $controller->rootid; ?>">
+					<input class="pedigree_form" data-autocomplete-type="INDI" type="text" name="rootid" id="rootid" size="3" value="<?php echo $controller->root->getXref(); ?>">
 					<?php echo print_findindi_link('rootid'); ?>
 				</td>
 				<td class="descriptionbox">
@@ -135,7 +135,7 @@ $controller
 
 if ($controller->error_message) {
 	echo '<p class="ui-state-error">', $controller->error_message, '</p>';
-	exit;
+	return;
 }
 
 switch ($controller->chart_style) {
@@ -143,54 +143,44 @@ case 0:
 	// List
 	$pidarr=array();
 	echo '<ul id="ancestry_chart">';
-	$controller->print_child_ascendancy($controller->root, 1, $OLD_PGENS-1);
+	$controller->printChildAscendancy($controller->root, 1, $OLD_PGENS-1);
 	echo '</ul>';
 	echo '<br>';
 	break;
 case 1:
 	// TODO: this should be a parameter to a function, not a global
-	$show_cousins=$controller->show_cousins;
+	$show_cousins = $controller->show_cousins;
 	echo '<div id="ancestry_chart">';
 	// Booklet
 	// first page : show indi facts
-	print_pedigree_person($controller->root, 1, 1);
+	print_pedigree_person($controller->root);
 	// process the tree
-	$treeid=ancestry_array($controller->root->getXref(), $PEDIGREE_GENERATIONS-1);
-	foreach ($treeid as $i=>$pid) {
-		if ($pid) {
-			$person=WT_Individual::getInstance($pid);
-			if ($person) {
-				foreach ($person->getChildFamilies() as $family) {
-					print_sosa_family($family->getXref(), $pid, $i);
-				}
-			}
+	$ancestors = $controller->sosaAncestors($PEDIGREE_GENERATIONS-1);
+	$ancestors = array_filter($ancestors); // The SOSA array includes empty placeholders
+	foreach ($ancestors as $sosa => $individual) {
+		foreach ($individual->getChildFamilies() as $family) {
+			print_sosa_family($family->getXref(), $individual, $sosa);
 		}
 	}
 	echo '</div>';
 	break;
 case 2:
 	// Individual list
-	$treeid=ancestry_array($controller->root->getXref(), $PEDIGREE_GENERATIONS);
-	echo '<div id="ancestry-list">';
-	echo format_indi_table($treeid, 'sosa');
-	echo '</div>';
+	$ancestors = $controller->sosaAncestors($PEDIGREE_GENERATIONS);
+	$ancestors = array_filter($ancestors); // The SOSA array includes empty placeholders
+	echo '<div id="ancestry-list">', format_indi_table($ancestors, 'sosa'), '</div>';
 	break;
 case 3:
 	// Family list
-	$treeid=ancestry_array($controller->root->getXref(), $PEDIGREE_GENERATIONS-1);
-	$famlist=array();
-	foreach ($treeid as $pid) {
-		$person=WT_Individual::getInstance($pid);
-		if (is_null($person)) {
-			continue;
-		}
-		foreach ($person->getChildFamilies() as $famc) {
-			$famlist[$famc->getXref()]=$famc;
+	$ancestors = $controller->sosaAncestors($PEDIGREE_GENERATIONS-1);
+	$ancestors = array_filter($ancestors); // The SOSA array includes empty placeholders
+	$families = array();
+	foreach ($ancestors as $individual) {
+		foreach ($individual->getChildFamilies() as $family) {
+			$families[$family->getXref()] = $family;
 		}
 	}
-	echo '<div id="ancestry-list">';
-	echo format_fam_table($famlist, $controller->getPageTitle());
-	echo '</div>';
+	echo '<div id="ancestry-list">', format_fam_table($families), '</div>';
 	break;
 }
-echo '</div>'; // close #ancestry-page
+echo '</div>';

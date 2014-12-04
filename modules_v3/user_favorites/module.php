@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,7 +19,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
@@ -30,17 +32,17 @@ if (!defined('WT_WEBTREES')) {
 require_once WT_ROOT.WT_MODULES_DIR.'gedcom_favorites/module.php';
 
 class user_favorites_WT_Module extends gedcom_favorites_WT_Module {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		return /* I18N: Description of the “Favorites” module */ WT_I18N::translate('Display and manage a user’s favorite pages.');
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isUserBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isGedcomBlock() {
 		return false;
 	}
@@ -57,7 +59,7 @@ class user_favorites_WT_Module extends gedcom_favorites_WT_Module {
 			->fetchAll(PDO::FETCH_ASSOC);
 	}
 
-	// Add a favorite to the user-favorites
+	/** {@inheritdoc} */
 	public function modAction($modAction) {
 		global $controller;
 
@@ -65,9 +67,9 @@ class user_favorites_WT_Module extends gedcom_favorites_WT_Module {
 		case 'menu-add-favorite':
 			// Process the "add to user favorites" menu item on indi/fam/etc. pages
 			$record = WT_GedcomRecord::getInstance(WT_Filter::post('xref', WT_REGEX_XREF));
-			if (WT_USER_ID && $record->canShowName()) {
+			if (Auth::check() && $record->canShowName()) {
 				self::addFavorite(array(
-					'user_id'   => WT_USER_ID,
+					'user_id'   => Auth::id(),
 					'gedcom_id' => $record->getGedcomId(),
 					'gid'       => $record->getXref(),
 					'type'      => $record::RECORD_TYPE,

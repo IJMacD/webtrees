@@ -2,10 +2,10 @@
 // Date Functions that can be used by any page in webtrees
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,13 +19,14 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * @param string  $age_string
+ * @param boolean $show_years
+ *
+ * @return string
+ */
 function get_age_at_event($age_string, $show_years) {
 	switch (strtoupper($age_string)) {
 	case 'CHILD':
@@ -40,10 +41,6 @@ function get_age_at_event($age_string, $show_years) {
 				'/(\d+)([ymwd])/',
 			),
 			function ($match) use ($age_string, $show_years) {
-				switch (WT_LOCALE) {
-				case 'pl':
-					$show_years = true;
-				}
 				switch ($match[2]) {
 				case 'y':
 					if ($show_years || preg_match('/[dm]/', $age_string)) {
@@ -65,73 +62,63 @@ function get_age_at_event($age_string, $show_years) {
 }
 
 /**
-* Parse a time string into its different parts
-* @param string $timestr the time as it was taken from the TIME tag
-* @return array returns an array with the hour, minutes, and seconds
-*/
-function parse_time($timestr)
-{
-	$time = explode(':', $timestr.':0:0');
-	$time[0] = min(((int) $time[0]), 23); // Hours: integer, 0 to 23
-	$time[1] = min(((int) $time[1]), 59); // Minutes: integer, 0 to 59
-	$time[2] = min(((int) $time[2]), 59); // Seconds: integer, 0 to 59
-	$time["hour"] = $time[0];
-	$time["minutes"] = $time[1];
-	$time["seconds"] = $time[2];
-
-	return $time;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Convert a unix timestamp into a formated date-time value, for logs, etc.
-// We can’t just use date("$DATE_FORMAT- $TIME_FORMAT") as this doesn't
-// support internationalisation.
-// Don't attempt to convert into other calendars, as not all days start at
-// midnight, and we can only get it wrong.
-////////////////////////////////////////////////////////////////////////////////
+ * Convert a unix timestamp into a formated date-time value, for logs, etc.
+ * We can’t just use date("$DATE_FORMAT- $TIME_FORMAT") as this doesn't
+ * support internationalisation.
+ * Don't attempt to convert into other calendars, as not all days start at
+ * midnight, and we can only get it wrong.
+ *
+ * @param integer $time
+ *
+ * @return string
+ */
 function format_timestamp($time) {
 	global $DATE_FORMAT, $TIME_FORMAT;
 
-	$time_fmt=$TIME_FORMAT;
+	$time_fmt = $TIME_FORMAT;
 	// PHP::date() doesn't do I18N.  Do it ourselves....
 	preg_match_all('/%[^%]/', $time_fmt, $matches);
 	foreach ($matches[0] as $match) {
 		switch ($match) {
 		case '%a':
-			$t=date('His', $time);
-			if ($t=='000000') {
-				$time_fmt=str_replace($match, /* I18N: time format “%a” - exactly 00:00:00 */ WT_I18N::translate('midnight'), $time_fmt);
-			} elseif ($t<'120000') {
-				$time_fmt=str_replace($match, /* I18N: time format “%a” - between 00:00:01 and 11:59:59 */ WT_I18N::translate('a.m.'), $time_fmt);
-			} elseif ($t=='120000') {
-				$time_fmt=str_replace($match, /* I18N: time format “%a” - exactly 12:00:00 */ WT_I18N::translate('noon'), $time_fmt);
+			$t = gmdate('His', $time);
+			if ($t == '000000') {
+				$time_fmt = str_replace($match, /* I18N: time format “%a” - exactly 00:00:00 */ WT_I18N::translate('midnight'), $time_fmt);
+			} elseif ($t < '120000') {
+				$time_fmt = str_replace($match, /* I18N: time format “%a” - between 00:00:01 and 11:59:59 */ WT_I18N::translate('a.m.'), $time_fmt);
+			} elseif ($t == '120000') {
+				$time_fmt = str_replace($match, /* I18N: time format “%a” - exactly 12:00:00 */ WT_I18N::translate('noon'), $time_fmt);
 			} else {
-				$time_fmt=str_replace($match, /* I18N: time format “%a” - between 12:00:01 and 23:59:59 */ WT_I18N::translate('p.m.'), $time_fmt);
+				$time_fmt = str_replace($match, /* I18N: time format “%a” - between 12:00:01 and 23:59:59 */ WT_I18N::translate('p.m.'), $time_fmt);
 			}
 			break;
 		case '%A':
-			$t=date('His', $time);
-			if ($t=='000000') {
-				$time_fmt=str_replace($match, /* I18N: time format “%A” - exactly 00:00:00 */ WT_I18N::translate('Midnight'), $time_fmt);
-			} elseif ($t<'120000') {
-				$time_fmt=str_replace($match, /* I18N: time format “%A” - between 00:00:01 and 11:59:59 */ WT_I18N::translate('A.M.'), $time_fmt);
-			} elseif ($t=='120000') {
-				$time_fmt=str_replace($match, /* I18N: time format “%A” - exactly 12:00:00 */ WT_I18N::translate('Noon'), $time_fmt);
+			$t = gmdate('His', $time);
+			if ($t == '000000') {
+				$time_fmt = str_replace($match, /* I18N: time format “%A” - exactly 00:00:00 */ WT_I18N::translate('Midnight'), $time_fmt);
+			} elseif ($t < '120000') {
+				$time_fmt = str_replace($match, /* I18N: time format “%A” - between 00:00:01 and 11:59:59 */ WT_I18N::translate('A.M.'), $time_fmt);
+			} elseif ($t == '120000') {
+				$time_fmt = str_replace($match, /* I18N: time format “%A” - exactly 12:00:00 */ WT_I18N::translate('Noon'), $time_fmt);
 			} else {
-				$time_fmt=str_replace($match, /* I18N: time format “%A” - between 12:00:01 and 23:59:59 */ WT_I18N::translate('P.M.'), $time_fmt);
+				$time_fmt = str_replace($match, /* I18N: time format “%A” - between 12:00:01 and 23:59:59 */ WT_I18N::translate('P.M.'), $time_fmt);
 			}
 				break;
 		default:
-			$time_fmt=str_replace($match, WT_I18N::digits(gmdate(substr($match, -1), $time)), $time_fmt);
+			$time_fmt = str_replace($match, WT_I18N::digits(gmdate(substr($match, -1), $time)), $time_fmt);
 		}
 	}
 
-	return timestamp_to_gedcom_date($time)->Display(false, $DATE_FORMAT).  '<span class="date"> - '.$time_fmt.'</span>';
+	return timestamp_to_gedcom_date($time)->display() . '<span class="date"> - ' . $time_fmt . '</span>';
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Convert a unix-style timestamp into a WT_Date object
-////////////////////////////////////////////////////////////////////////////////
+/**
+ * Convert a unix-style timestamp into a WT_Date object
+ *
+ * @param integer $time
+ *
+ * @return WT_Date
+ */
 function timestamp_to_gedcom_date($time) {
 	return new WT_Date(strtoupper(gmdate('j M Y', $time)));
 }

@@ -4,10 +4,10 @@
 // Set the root person using the $pid variable
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,20 +21,20 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'hourglass.php');
 require './includes/session.php';
 require_once WT_ROOT.'includes/functions/functions_edit.php';
 
-$controller=new WT_Controller_Hourglass();
+$controller = new WT_Controller_Hourglass();
 $controller
 	->pageHeader()
-	->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js')
-	->setupJavascript()
-	->addInlineJavascript('sizeLines();');
+	->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+	->addInlineJavascript('autocomplete();')
+	->setupJavascript();
 
-$gencount=0;
+$gencount = 0;
 
 ?>
 <div id="hourglass-page">
@@ -48,7 +48,7 @@ $gencount=0;
 					<?php echo WT_I18N::translate('Individual'); ?>
 				</td>
 				<td class="optionbox">
-					<input class="pedigree_form" type="text" name="rootid" id="rootid" size="3" value="<?php echo $controller->pid; ?>">
+					<input class="pedigree_form" data-autocomplete-type="INDI" type="text" name="rootid" id="rootid" size="3" value="<?php echo $controller->pid; ?>">
 					<?php echo print_findindi_link('pid'); ?>
 				</td>
 				<td class="descriptionbox">
@@ -94,13 +94,13 @@ $gencount=0;
 	</form>
 
 	<div id="hourglass_chart" style="width:98%; z-index:1;">
-		<table cellspacing="0" cellpadding="0" border="0">
+		<table>
 			<tr>
-				<td valign="middle">
-					<?php $controller->print_descendency(WT_Individual::getInstance($controller->pid), 1); ?>
+				<td style="vertical-align:middle">
+					<?php $controller->printDescendency(WT_Individual::getInstance($controller->pid), 1); ?>
 				</td>
-				<td valign="middle">
-					<?php $controller->print_person_pedigree(WT_Individual::getInstance($controller->pid), 1); ?>
+				<td style="vertical-align:middle">
+					<?php $controller->printPersonPedigree(WT_Individual::getInstance($controller->pid), 1); ?>
 				</td>
 			</tr>
 		</table>

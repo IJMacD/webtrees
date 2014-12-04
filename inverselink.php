@@ -4,10 +4,10 @@
 // This is the page that does the work of linking items.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,17 +21,20 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'inverselink.php');
 require './includes/session.php';
 require WT_ROOT.'includes/functions/functions_edit.php';
 
-$controller=new WT_Controller_Simple();
+$controller = new WT_Controller_Simple();
 $controller
-	->requireEditorLogin()
+	->restrictAccess(Auth::isEditor())
 	->setPageTitle(WT_I18N::translate('Link to an existing media object'))
-	->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js')
+	->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+	->addInlineJavascript('autocomplete();')
 	->pageHeader();
 
 //-- page parameters and checking
@@ -50,25 +53,6 @@ if ($linkto=='manage' && array_key_exists('GEDFact_assistant', WT_Module::getAct
 	if (!empty($linktoid)) $paramok = WT_GedcomRecord::getInstance($linktoid)->canShow();
 
 	if ($action == "choose" && $paramok) {
-		?>
-		<script>
-		var pastefield;
-
-		function openerpasteid(id) {
-			window.opener.paste_id(id);
-			window.close();
-		}
-
-		function paste_id(value) {
-			pastefield.value = value;
-		}
-
-		function paste_char(value) {
-			pastefield.value += value;
-		}
-		</script>
-
-		<?php
 		echo '<form name="link" method="get" action="inverselink.php">';
 		echo '<input type="hidden" name="action" value="update">';
 		if (!empty($mediaid)) {
@@ -96,7 +80,7 @@ if ($linkto=='manage' && array_key_exists('GEDFact_assistant', WT_Module::getAct
 				echo '<b>', $mediaid, '</b>';
 			}
 		} else {
-			echo '<input type="text" name="mediaid" id="mediaid" size="5">';
+			echo '<input data-autocomplete-type="OBJE" type="text" name="mediaid" id="mediaid" size="5">';
 			echo ' ', print_findmedia_link('mediaid', '1media');
 			echo "</td></tr>";
 		}

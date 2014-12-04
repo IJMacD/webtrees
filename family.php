@@ -4,10 +4,10 @@
 // You must supply a $famid value with the identifier for the family.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,16 +21,16 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'family.php');
 require './includes/session.php';
 
-$controller=new WT_Controller_Family();
+$controller = new WT_Controller_Family();
 
 if ($controller->record && $controller->record->canShow()) {
 	$controller->pageHeader();
-	if ($controller->record->isOld()) {
+	if ($controller->record->isPendingDeletion()) {
 		if (WT_USER_CAN_ACCEPT) {
 			echo
 				'<p class="ui-state-highlight">',
@@ -48,7 +48,7 @@ if ($controller->record && $controller->record->canShow()) {
 				' ', help_link('pending_changes'),
 				'</p>';
 		}
-	} elseif ($controller->record->isNew()) {
+	} elseif ($controller->record->isPendingAddtion()) {
 		if (WT_USER_CAN_ACCEPT) {
 			echo
 				'<p class="ui-state-highlight">',
@@ -81,21 +81,10 @@ if ($controller->record && $controller->record->canShow()) {
 $PEDIGREE_FULL_DETAILS = '1'; // Override GEDCOM configuration
 $show_full = '1';
 
-echo '<script>';
-echo 'function show_gedcom_record() {';
-echo ' var recwin=window.open("gedrecord.php?pid=', $controller->record->getXref(), '", "_blank", edit_window_specs);';
-echo '}';
-echo '</script>';
-
 ?>
 <div id="family-page">
-<table align="center" width="95%">
-	<tr>
-		<td>
-			<p class="name_head"><?php echo $controller->record->getFullName(); ?></p>
-		</td>
-	</tr>
-</table>
+<h2><?php echo $controller->record->getFullName(); ?></h2>
+
 <table id="family-table" align="center" width="95%">
 	<tr valign="top">
 		<td valign="top" style="width: <?php echo $pbwidth+30; ?>px;"><!--//List of children//-->
@@ -110,7 +99,7 @@ echo '</script>';
 				<tr>
 					<td colspan="2">
 						<?php
-						echo print_family_parents($controller->record);
+						print_family_parents($controller->record);
 						if (WT_USER_CAN_EDIT) {
 							$husb=$controller->record->getHusband();
 							if (!$husb) {

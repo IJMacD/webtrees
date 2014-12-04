@@ -2,10 +2,10 @@
 // Change the blocks on "My page" and "Home page"
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,28 +19,32 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'index_edit.php');
 require './includes/session.php';
 
-$controller=new WT_Controller_Ajax();
+$controller = new WT_Controller_Ajax();
 
 // Only one of $user_id and $gedcom_id should be set
 $user_id = WT_Filter::get('user_id', WT_REGEX_INTEGER, WT_Filter::post('user_id', WT_REGEX_INTEGER));
 if ($user_id) {
 	$gedcom_id = null;
+	$can_reset = $user_id > 0;
 } else {
 	$gedcom_id = WT_Filter::get('gedcom_id', WT_REGEX_INTEGER, WT_Filter::post('gedcom_id', WT_REGEX_INTEGER));
+	$can_reset = $gedcom_id > 0;
 }
 
 // Only an admin can edit the "default" page
 // Only managers can edit the "home page"
 // Only a user or an admin can edit a user’s "my page"
 if (
-	$gedcom_id<0 && !WT_USER_IS_ADMIN ||
-	$gedcom_id>0 && !userGedcomAdmin(WT_USER_ID, $gedcom_id) ||
-	$user_id && WT_USER_ID!=$user_id && !WT_USER_IS_ADMIN
+	$gedcom_id < 0 && !Auth::isAdmin() ||
+	$gedcom_id > 0 && !Auth::isManager(WT_Tree::get($gedcom_id)) ||
+	$user_id && Auth::id() != $user_id && !Auth::isAdmin()
 ) {
 	$controller->pageHeader();
 	$controller->addInlineJavascript('window.location.reload();');
@@ -49,54 +53,64 @@ if (
 
 $action = WT_Filter::get('action');
 
-if (isset($_REQUEST['main'])) {
-	$main=$_REQUEST['main'];
+if ($can_reset && WT_Filter::post('default') === '1') {
+	if ($user_id) {
+		$defaults = get_user_blocks(-1);
+	} else {
+		$defaults = get_gedcom_blocks(-1);
+	}
+	$main  = $defaults['main'];
+	$right = $defaults['side'];
 } else {
-	$main=array();
-}
-if (isset($_REQUEST['right'])) {
-	$right=$_REQUEST['right'];
-} else {
-	$right=array();
-}
+	if (isset($_REQUEST['main'])) {
+		$main = $_REQUEST['main'];
+	} else {
+		$main = array();
+	}
 
+	if (isset($_REQUEST['right'])) {
+		$right = $_REQUEST['right'];
+	} else {
+		$right = array();
+	}
+}
 // Define all the icons we're going to use
 $IconUarrow = 'icon-uarrow';
 $IconDarrow = 'icon-darrow';
-if($TEXT_DIRECTION=='ltr') {
-	$IconRarrow = 'icon-rarrow';
-	$IconLarrow = 'icon-larrow';
+if ($TEXT_DIRECTION === 'ltr') {
+	$IconRarrow  = 'icon-rarrow';
+	$IconLarrow  = 'icon-larrow';
 	$IconRDarrow = 'icon-rdarrow';
 	$IconLDarrow = 'icon-ldarrow';
 } else {
-	$IconRarrow = 'icon-larrow';
-	$IconLarrow = 'icon-rarrow';
+	$IconRarrow  = 'icon-larrow';
+	$IconLarrow  = 'icon-rarrow';
 	$IconRDarrow = 'icon-ldarrow';
 	$IconLDarrow = 'icon-rdarrow';
 }
 
-$all_blocks=array();
-foreach (WT_Module::getActiveBlocks() as $name=>$block) {
+$all_blocks = array();
+foreach (WT_Module::getActiveBlocks() as $name => $block) {
 	if ($user_id && $block->isUserBlock() || $gedcom_id && $block->isGedcomBlock()) {
-		$all_blocks[$name]=$block;
+		$all_blocks[$name] = $block;
 	}
 }
 
 if ($user_id) {
-	$blocks=get_user_blocks($user_id);
-} elseif ($gedcom_id) {
-	$blocks=get_gedcom_blocks($gedcom_id);
+	$blocks = get_user_blocks($user_id);
+} else {
+	$blocks = get_gedcom_blocks($gedcom_id);
 }
 
-if ($action=='update') {
+if ($action === 'update') {
 	Zend_Session::writeClose();
 	foreach (array('main', 'side') as $location) {
-		if ($location=='main') {
-			$new_blocks=$main;
+		if ($location === 'main') {
+			$new_blocks = $main;
 		} else {
-			$new_blocks=$right;
+			$new_blocks = $right;
 		}
-		foreach ($new_blocks as $order=>$block_name) {
+		foreach ($new_blocks as $order => $block_name) {
 			if (is_numeric($block_name)) {
 				// existing block
 				WT_DB::prepare("UPDATE `##block` SET block_order=? WHERE block_id=?")->execute(array($order, $block_name));
@@ -126,11 +140,12 @@ $controller
 	->pageHeader()
 	->addInlineJavascript('
 	/**
-	* Move Up Block Javascript function
-	*
-	* This function moves the selected option up in the given select list
-	* @param String section_name the name of the select to move the options
-	*/
+	 * Move Up Block Javascript function
+	 *
+	 * This function moves the selected option up in the given select list
+	 *
+	 * @param String section_name the name of the select to move the options
+	 */
 	function move_up_block(section_name) {
 		section_select = document.getElementById(section_name);
 		if (section_select) {
@@ -144,11 +159,12 @@ $controller
 	}
 
 	/**
-	* Move Down Block Javascript function
-	*
-	* This function moves the selected option down in the given select list
-	* @param String section_name the name of the select to move the options
-	*/
+	 * Move Down Block Javascript function
+	 *
+	 * This function moves the selected option down in the given select list
+	 *
+	 * @param String section_name the name of the select to move the options
+	 */
 	function move_down_block(section_name) {
 		section_select = document.getElementById(section_name);
 		if (section_select) {
@@ -163,13 +179,13 @@ $controller
 	}
 
 	/**
-	* Move Block from one column to the other Javascript function
-	*
-	* This function moves the selected option down in the given select list
-	* @author KosherJava
-	* @param String from_column the name of the select to move the option from
-	* @param String to_column the name of the select to remove the option to
-	*/
+	 * Move Block from one column to the other Javascript function
+	 *
+	 * This function moves the selected option down in the given select list
+	 *
+	 * @param String from_column the name of the select to move the option from
+	 * @param String to_column the name of the select to remove the option to
+	 */
 	function move_left_right_block(from_column, to_column) {
 		to_select = document.getElementById(to_column);
 		from_select = document.getElementById(from_column);
@@ -185,10 +201,10 @@ $controller
 		}
 	}
 	/**
-	* Select Options Javascript function
-	*
-	* This function selects all the options in the multiple select lists
-	*/
+	 * Select Options Javascript function
+	 *
+	 * This function selects all the options in the multiple select lists
+	 */
 	function select_options() {
 		section_select = document.getElementById("main_select");
 		if (section_select) {
@@ -204,12 +220,14 @@ $controller
 		}
 		return true;
 	}
+
 	/**
-	* Show Block Description Javascript function
-	*
-	* This function shows a description for the selected option
-	* @param String list_name the name of the select to get the option from
-	*/
+	 * Show Block Description Javascript function
+	 *
+	 * This function shows a description for the selected option
+	 *
+	 * @param String list_name the name of the select to get the option from
+	 */
 	function show_description(list_name) {
 		list_select = document.getElementById(list_name);
 		instruct = document.getElementById("instructions");
@@ -239,13 +257,13 @@ $controller
 
 
 	// Load Block Description array for use by javascript
-	foreach ($all_blocks as $block_name=>$block) {
+	foreach ($all_blocks as $block_name => $block) {
 		$controller->addInlineJavascript(
 			'block_descr["'.$block_name.'"] = "'.WT_Filter::escapeJs($block->getDescription()).'";'
 		);
 	}
 	$controller->addInlineJavascript(
-		'block_descr["advice1"] = "'.WT_I18N::translate('Highlight a  block name and then click on one of the arrow icons to move that highlighted block in the indicated direction.').'";'
+		'block_descr["advice1"] = "'.WT_I18N::translate('Highlight a block name and then click on one of the arrow icons to move that highlighted block in the indicated direction.').'";'
 	);
 
 ?>
@@ -330,9 +348,15 @@ echo '</td>';
 echo '</tr>';
 // NOTE: Row 3 columns 1-7: Summary description of currently selected block
 echo '<tr><td class="descriptionbox wrap" colspan="7"><div id="instructions">';
-echo WT_I18N::translate('Highlight a  block name and then click on one of the arrow icons to move that highlighted block in the indicated direction.');
+echo WT_I18N::translate('Highlight a block name and then click on one of the arrow icons to move that highlighted block in the indicated direction.');
 echo '</div></td></tr>';
-echo '<tr><td class="topbottombar" colspan="7">';
+if ($can_reset) {
+	echo '<tr><td class="topbottombar" colspan="4">';
+	echo '<input type="checkbox" name="default" value="1">', WT_I18N::translate('Restore the default block layout'), '</td>';
+	echo '<td class="topbottombar" colspan="3">';
+} else {
+	echo '<td class="topbottombar" colspan="7">';
+}
 echo '<input type="submit" value="', WT_I18N::translate('save'), '">';
 echo '</td></tr></table>';
 echo '</form>';

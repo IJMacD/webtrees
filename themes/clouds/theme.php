@@ -2,11 +2,11 @@
 // Clouds theme
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView Cloudy theme
 // Original author w.a. bastein http://genealogy.bastein.biz
-// Copyright (C) 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
@@ -45,10 +45,10 @@ function getMenuAsCustomList($menu) {
 }
 
 // Theme name - this needs double quotes, as file is scanned/parsed by script
-$theme_name = "clouds";
+$theme_name = "clouds"; /* I18N: Name of a theme. */ WT_I18N::translate('clouds');
 
 // A version number in the path prevents browser-cache problems during upgrade
-define('WT_CSS_URL', WT_THEME_URL . 'css-1.5.1/');
+define('WT_CSS_URL', WT_THEME_URL . 'css-1.6.0/');
 
 $headerfile = WT_THEME_DIR . 'header.php';
 $footerfile = WT_THEME_DIR . 'footer.php';
@@ -78,7 +78,7 @@ $WT_IMAGES=array(
 // Variables for the Fan chart
 $fanChart = array(
 	'font'     => WT_ROOT . 'includes/fonts/DejaVuSans.ttf',
-	'size'     => '7px',
+	'size'     => 7,
 	'color'    => '#000000',
 	'bgColor'  => '#eeeeee',
 	'bgMColor' => '#b1cff0',

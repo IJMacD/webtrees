@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,25 +19,24 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use Fisharebest\ExtCalendar\JewishCalendar;
+use Rhumsaa\Uuid\Uuid;
+use WT\Auth;
 
 class yahrzeit_WT_Module extends WT_Module implements WT_Module_Block {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		return /* I18N: Name of a module.  Yahrzeiten (the plural of Yahrzeit) are special anniversaries of deaths in the Hebrew faith/calendar. */ WT_I18N::translate('Yahrzeiten');
 	}
 
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		return /* I18N: Description of the “Yahrzeiten” module.  A “Hebrew death” is a death where the date is recorded in the Hebrew calendar. */ WT_I18N::translate('A list of the Hebrew death anniversaries that will occur in the near future.');
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function getBlock($block_id, $template=true, $cfg=null) {
 		global $ctype, $controller;
 
@@ -54,17 +53,17 @@ class yahrzeit_WT_Module extends WT_Module implements WT_Module_Block {
 			}
 		}
 
-		$startjd=WT_CLIENT_JD;
-		$endjd  =WT_CLIENT_JD+$days-1;
+		$startjd = WT_CLIENT_JD;
+		$endjd   = WT_CLIENT_JD + $days - 1;
 
-		$id=$this->getName().$block_id;
-		$class=$this->getName().'_block';
-		if ($ctype=='gedcom' && WT_USER_GEDCOM_ADMIN || $ctype=='user' && WT_USER_ID) {
-			$title='<i class="icon-admin" title="'.WT_I18N::translate('Configure').'" onclick="modalDialog(\'block_edit.php?block_id='.$block_id.'\', \''.$this->getTitle().'\');"></i>';
+		$id    = $this->getName() . $block_id;
+		$class = $this->getName() . '_block';
+		if ($ctype === 'gedcom' && WT_USER_GEDCOM_ADMIN || $ctype === 'user' && Auth::check()) {
+			$title = '<i class="icon-admin" title="'.WT_I18N::translate('Configure').'" onclick="modalDialog(\'block_edit.php?block_id='.$block_id.'\', \''.$this->getTitle().'\');"></i>';
 		} else {
-			$title='';
+			$title = '';
 		}
-		$title.=$this->getTitle();
+		$title .= $this->getTitle();
 
 		$content='';
 		// The standard anniversary rules cover most of the Yahrzeit rules, we just
@@ -83,24 +82,26 @@ class yahrzeit_WT_Module extends WT_Module implements WT_Module_Block {
 		}
 
 		// ...then adjust dates
+		$jewish_calendar = new JewishCalendar;
+
 		foreach ($yahrzeits as $yahrzeit) {
 			if ($yahrzeit->getTag() == 'DEAT') { // Just DEAT, not _YART
 				$today=new WT_Date_Jewish($yahrzeit->jd);
 				$hd=$yahrzeit->getDate()->MinDate();
 				$hd1=new WT_Date_Jewish($hd);
 				$hd1->y+=1;
-				$hd1->SetJDFromYMD();
+				$hd1->setJdFromYmd();
 				// Special rules.  See http://www.hebcal.com/help/anniv.html
 				// Everything else is taken care of by our standard anniversary rules.
-				if ($hd->d==30 && $hd->m==2 && $hd->y!=0 && $hd1->DaysInMonth()<30) { // 30 CSH
+				if ($hd->d==30 && $hd->m==2 && $hd->y!=0 && $hd1->daysInMonth()<30) { // 30 CSH
 					// Last day in CSH
-					$yahrzeit->jd = WT_Date_Jewish::YMDtoJD($today->y, 3, 1)-1;
-				} elseif ($hd->d==30 && $hd->m==3 && $hd->y!=0 && $hd1->DaysInMonth()<30) { // 30 KSL
+					$yahrzeit->jd = $jewish_calendar->ymdToJd($today->y, 3, 1)-1;
+				} elseif ($hd->d==30 && $hd->m==3 && $hd->y!=0 && $hd1->daysInMonth()<30) { // 30 KSL
 					// Last day in KSL
-					$yahrzeit->jd = WT_Date_Jewish::YMDtoJD($today->y, 4, 1)-1;
-				} elseif ($hd->d==30 && $hd->m==6 && $hd->y!=0 && $today->DaysInMonth()<30 && !$today->IsLeapYear()) { // 30 ADR
+					$yahrzeit->jd = $jewish_calendar->ymdToJd($today->y, 4, 1)-1;
+				} elseif ($hd->d==30 && $hd->m==6 && $hd->y!=0 && $today->daysInMonth()<30 && !$today->isLeapYear()) { // 30 ADR
 					// Last day in SHV
-					$yahrzeit->jd = WT_Date_Jewish::YMDtoJD($today->y, 6, 1)-1;
+					$yahrzeit->jd = $jewish_calendar->ymdToJd($today->y, 6, 1)-1;
 				}
 			}
 		}
@@ -119,28 +120,28 @@ class yahrzeit_WT_Module extends WT_Module implements WT_Module_Block {
 			break;
 		case 'table':
 		default:
-			$table_id = "ID".(int)(microtime()*1000000); // table requires a unique ID
+			$table_id = Uuid::uuid4(); // table requires a unique ID
 			$controller
 				->addExternalJavascript(WT_JQUERY_DATATABLES_URL)
 				->addInlineJavascript('
 					jQuery("#'.$table_id.'").dataTable({
-						"sDom": \'t\',
+						dom: \'t\',
 						'.WT_I18N::datatablesI18N().',
-						"bAutoWidth":false,
-						"bPaginate": false,
-						"bLengthChange": false,
-						"bFilter": false,
-						"bInfo": true,
-						"bJQueryUI": true,
-						"aaSorting": [[5,"asc"]],
-						"aoColumns": [
-							/* 0-name */ { "iDataSort": 1 },
-							/* 1-NAME */ { "bVisible": false },
-							/* 2-date */ { "iDataSort": 3 },
-							/* 3-DATE */ { "bVisible": false },
-							/* 4-Aniv */ { "sClass": "center"},
-							/* 5-yart */ { "iDataSort": 6 },
-							/* 6-YART */ { "bVisible": false }
+						autoWidth: false,
+						paginate: false,
+						lengthChange: false,
+						filter: false,
+						info: true,
+						jQueryUI: true,
+						sorting: [[5,"asc"]],
+						columns: [
+							/* 0-name */ { dataSort: 1 },
+							/* 1-NAME */ { visible: false },
+							/* 2-date */ { dataSort: 3 },
+							/* 3-DATE */ { visible: false },
+							/* 4-Aniv */ { class: "center"},
+							/* 5-yart */ { dataSort: 6 },
+							/* 6-YART */ { visible: false }
 						]
 					});
 					jQuery("#'.$table_id.'").css("visibility", "visible");
@@ -193,8 +194,8 @@ class yahrzeit_WT_Module extends WT_Module implements WT_Module_Block {
 						$today=new WT_Date_Jewish($yahrzeit->jd);
 						break;
 					}
-					$td=new WT_Date($today->Format('%@ %A %O %E'));
-					$content .= '<td>'.$td->Display().'</td>';
+					$td=new WT_Date($today->format('%@ %A %O %E'));
+					$content .= '<td>'.$td->display().'</td>';
 					$content .= '<td>'.$td->minJD().'</td>';// sortable date
 
 					$content .= '</tr>';
@@ -216,22 +217,22 @@ class yahrzeit_WT_Module extends WT_Module implements WT_Module_Block {
 		}
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function loadAjax() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isUserBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isGedcomBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function configureBlock($block_id) {
 		if (WT_Filter::postBool('save') && WT_Filter::checkCsrf()) {
 			set_block_setting($block_id, 'days',      WT_Filter::postInteger('days', 1, 30, 7));

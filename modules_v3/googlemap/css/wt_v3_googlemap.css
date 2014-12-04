@@ -2,7 +2,7 @@
  * webtrees googlemap V3 css
  *
  * webtrees: Web based Family History software
- * Copyright (C) 2013 webtrees development team.
+ * Copyright (C) 2014 webtrees development team.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-*/
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
 
 div.infowindow {
 	max-height: 240px;
@@ -25,19 +25,15 @@ div.infowindow {
 }
 
 #iwhead {
-	background: #ffffff;
-	border-bottom: 1px solid #bbbbbb;
-	border-left: 0 solid #bbbbbb;
-	border-right: 0 solid #bbbbbb;
-	border-top: 1px solid #bbbbbb;
+	background: #fff;
+	border: 1px solid #bbb;
+	border-right-width: 0;
+	border-left-width: 0;
 	font-size: 10px;
 	margin-left: -2px;
 	margin-right: 0;
 	margin-top: -1px;
-	padding-bottom: .3em;
-	padding-left: .2em;
-	padding-right: .2em;
-	padding-top: .3em;
+	padding: .3em .2em;
 	text-align: center;
 	white-space: normal;
 	width: 300px;
@@ -48,7 +44,7 @@ div.infowindow {
 }
 
 #iwcontent {
-	border: 1px solid #bbbbbb;
+	border: 1px solid #bbb;
 	margin-right: 0;
 }
 
@@ -57,7 +53,7 @@ div.infowindow {
 }
 
 #iwhead a {
-	color: #0000cc;
+	color: #00c;
 }
 
 #iwcontent a:hover {
@@ -65,7 +61,7 @@ div.infowindow {
 }
 
 #gmtabs {
-	background-color: #eeeeee;
+	background-color: #eee;
 }
 
 #gmtabs ul {
@@ -78,54 +74,50 @@ h4 {
 
 #txt {
 	width: 300px;
- 	background: #ffffcc;
- 	margin-left: -8px;
- 	margin-top: -8px;
- 	text-align: center;
+	background: #ffc;
+	margin-left: -8px;
+	margin-top: -8px;
+	text-align: center;
 }
 
 #pano {
 	width: 297px;
- 	border-top: 1px solid #aaaaaa;
- 	height: 216px;
- 	margin-left: 0;
- 	margin-top: 0;
+	border-top: 1px solid #aaa;
+	height: 216px;
+	margin-left: 0;
+	margin-top: 0;
 }
 
 .highlt_img {
-	background-color: #eeeeee;
- 	text-align: center;
+	background-color: #eee;
+	text-align: center;
 }
 
 .highlt_img img {
- 	border: none;
+	border: none;
 	float: none;
 }
 
 /* root element for tabs */
 ul.tabs {
 	margin: 0 !important;
- 	background: #ddeeff;
- 	border: 1px solid #666;
- 	height: 20px;
- 	padding-left: 2px;
- 	padding-top: 2px;
- 	padding: 0;
+	background: #def;
+	border: 1px solid #666;
+	height: 20px;
+	padding: 0;
 }
 
 /* single tab */
 ul.tabs li {
 	float: left;
- 	list-style-type: none;
- 	margin-left: 2px;
- 	margin: 0;
- 	padding: 0;
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
 }
 
 /* link inside the tab. uses a background image */
 ul.tabs a {
 	background-color: #efefef;
-	border-bottom: 0;
 	border-radius: 4px 4px 0 0;
 	border: 1px solid #666;
 	color: #777;
@@ -136,33 +128,33 @@ ul.tabs a {
 	position: relative;
 	text-decoration: none;
 	top: 1px;
- 	display: block;
- 	font-size: 13px;
- 	padding: 0 10px;
+	display: block;
+	font-size: 13px;
+	padding: 0 10px;
 }
 
 ul.tabs a:hover {
-	background-color: #ffffff;
- 	color: #333;
-} 
+	background-color: #fff;
+	color: #333;
+}
 
 /* selected tab */
 ul.tabs a.current {
 	background-color: #fff;
- 	border-bottom: 1px solid #ddd;
- 	color: #000;
- 	cursor: default;
+	border-bottom: 1px solid #ddd;
+	color: #000;
+	cursor: default;
 }
 
 /* tabs */
 #EV {
-	background: #ffffff;
- 	padding-bottom: 1px;
+	background: #fff;
+	padding-bottom: 1px;
 }
 
 #SV {
-	background: #cccccc;
- 	padding-bottom: 0;
+	background: #ccc;
+	padding-bottom: 0;
 }
 
 /* tab panes */
@@ -177,7 +169,7 @@ ul.tabs a.current {
 /* view_type */
 #view_type {
 	display: block;
- 	margin-top: -12px;
+	margin-top: -12px;
 }
 
 #view_type td {
@@ -185,17 +177,17 @@ ul.tabs a.current {
 }
 
 #view_type form {
- 	text-align: center;
+	text-align: center;
 	width: 360px;
 }
 
 /* places_edit */
 #gname {
 	vertical-align: middle;
- 	height: 60px;
- 	margin-top: 0;
- 	white-space: pre-wrap;
- 	width: 200px;
+	height: 60px;
+	margin-top: 0;
+	white-space: pre-wrap;
+	width: 200px;
 }
 
 #namelink {
@@ -203,10 +195,10 @@ ul.tabs a.current {
 }
 
 #iwcontent_edit {
-	background-color: #eeeeee;
- 	border: 1px solid #bbbbbb;
- 	height: 60px;
- 	margin-right: 0;
+	background-color: #eee;
+	border: 1px solid #bbb;
+	height: 60px;
+	margin-right: 0;
 }
 
 #iwcontent_edit a {
@@ -221,44 +213,8 @@ ul.tabs a.current {
 	white-space: normal;
 }
 
-/* googlemap_style */
-#map_type {
-	margin: 0;
- 	font-family: Arial;
- 	font-size: 10px;
- 	list-style: none;
- 	padding: 0;
-}
-
-#map_type li {
-	display: block;
- 	border: 1px solid #000;
- 	cursor: pointer;
- 	float: left;
- 	margin-left: 2px;
- 	padding: 2px;
- 	text-align: center;
- 	width: 70px;
-}
-
-#map_type li.non_active {
-	background: #fff;
- 	color: #000;
- 	font-weight: normal;
-}
-
-#map_type li.active {
-	background: #888;
- 	color: #fff;
- 	font-weight: bold;
-}
-
-#map_type li:hover {
-	background: #ddd;
-}
-
-#googlemap_left {
-	margin-top: -14px !important;
+.iwstyle {
+	width: 360px;
 }
 
 #side_bar .gallery img,
@@ -271,9 +227,9 @@ ul.tabs a.current {
 	width: auto;
 }
 
-html[dir="rtl"] #side_bar .gallery img,
-html[dir="rtl"] .iwstyle .gallery img,
-html[dir="rtl"] .highlt_img .gallery img {
+[dir=rtl] #side_bar .gallery img,
+[dir=rtl] .iwstyle .gallery img,
+[dir=rtl] .highlt_img .gallery img {
 	float: right;
 	margin: 0 0 0 4px;
 }
@@ -287,19 +243,31 @@ html[dir="rtl"] .highlt_img .gallery img {
 	float: left;
 }
 
-html[dir="rtl"] #side_bar .icon-silhouette-M,
-html[dir="rtl"] #side_bar .icon-silhouette-F,
-html[dir="rtl"] #side_bar .icon-silhouette-U,
-html[dir="rtl"] .iwstyle .icon-silhouette-M,
-html[dir="rtl"] .iwstyle .icon-silhouette-F,
-html[dir="rtl"] .iwstyle .icon-silhouette-U {
+[dir=rtl] #side_bar .icon-silhouette-M,
+[dir=rtl] #side_bar .icon-silhouette-F,
+[dir=rtl] #side_bar .icon-silhouette-U,
+[dir=rtl] .iwstyle .icon-silhouette-M,
+[dir=rtl] .iwstyle .icon-silhouette-F,
+[dir=rtl] .iwstyle .icon-silhouette-U {
 	float: right;
 }
 
 #pedigreemap_chart {
 	margin: 20px;
 }
-#side_bar .NAME {padding-left:5px;}
-#side_bar img {padding-right:5px;}
-html[dir="rtl"] #side_bar .NAME {padding-right:5px;}
-html[dir="rtl"] #side_bar img {padding-left:5px;}
+
+#side_bar .NAME {
+	padding-left: 5px;
+}
+
+#side_bar img {
+	padding-right: 5px;
+}
+
+[dir=rtl] #side_bar .NAME {
+	padding-right: 5px;
+}
+
+[dir=rtl] #side_bar img {
+	padding-left: 5px;
+}

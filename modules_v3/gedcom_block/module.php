@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,25 +19,22 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use WT\Auth;
 
 class gedcom_block_WT_Module extends WT_Module implements WT_Module_Block {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		return /* I18N: Name of a module */ WT_I18N::translate('Home page');
 	}
 
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		return /* I18N: Description of the “Home page” module */ WT_I18N::translate('A greeting message for site visitors.');
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function getBlock($block_id, $template=true, $cfg=null) {
 		global $controller;
 
@@ -45,10 +42,11 @@ class gedcom_block_WT_Module extends WT_Module implements WT_Module_Block {
 		$id=$this->getName().$block_id;
 		$class=$this->getName().'_block';
 		$title='<span dir="auto">'.WT_TREE_TITLE.'</span>';
-		$content  = '<a href="pedigree.php?rootid='.$indi_xref.'&amp;ged='.WT_GEDURL.'" class="btn btn-primary block_btn"><i class="icon-pedigree"></i><br>'.WT_I18N::translate('Default chart').'</a>';
-		$content .= '<a href="individual.php?pid='.$indi_xref.'&amp;ged='.WT_GEDURL.'" class="btn btn-primary block_btn"><i class="icon-indis"></i><br>'.WT_I18N::translate('Default individual').'</a>';
-		if (WT_Site::preference('USE_REGISTRATION_MODULE') && WT_USER_ID==false) {
-			$content .= '<a href="'.WT_LOGIN_URL.'?action=register" class="btn btn-primary block_btn"><i class="icon-user_add"></i><br>'.WT_I18N::translate('Request new user account').'</a>';
+		$content = '<table><tr>';
+		$content .= '<td><a href="pedigree.php?rootid='.$indi_xref.'&amp;ged='.WT_GEDURL.'"><i class="icon-pedigree"></i><br>'.WT_I18N::translate('Default chart').'</a></td>';
+		$content .= '<td><a href="individual.php?pid='.$indi_xref.'&amp;ged='.WT_GEDURL.'"><i class="icon-indis"></i><br>'.WT_I18N::translate('Default individual').'</a></td>';
+		if (WT_Site::getPreference('USE_REGISTRATION_MODULE') && !Auth::check()) {
+			$content .= '<td><a href="'.WT_LOGIN_URL.'?action=register"><i class="icon-user_add"></i><br>'.WT_I18N::translate('Request new user account').'</a></td>';
 		}
 
 		if ($template) {
@@ -58,22 +56,22 @@ class gedcom_block_WT_Module extends WT_Module implements WT_Module_Block {
 		}
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function loadAjax() {
 		return false;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isUserBlock() {
 		return false;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isGedcomBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function configureBlock($block_id) {
 	}
 }

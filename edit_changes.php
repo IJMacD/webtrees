@@ -2,10 +2,10 @@
 // Interface to moderate pending changes.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2103 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,35 +19,31 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
+use WT\Log;
 
 define('WT_SCRIPT_NAME', 'edit_changes.php');
 require './includes/session.php';
-require WT_ROOT.'includes/functions/functions_edit.php';
 
-$controller=new WT_Controller_Simple();
+$controller = new WT_Controller_Simple();
 $controller
-	->requireAcceptLogin()
+	->restrictAccess(Auth::isModerator())
 	->setPageTitle(WT_I18N::translate('Pending changes'))
-	->pageHeader();
+	->pageHeader()
+	->addInlineJavascript("
+		function show_diff(diffurl) {
+			window.opener.location = diffurl;
+			return false;
+		}
+	");
 
 $action   =WT_Filter::get('action');
 $change_id=WT_Filter::getInteger('change_id');
 $index    =WT_Filter::get('index');
 $ged      =WT_Filter::getInteger('ged');
 
-echo '<script>';
-?>
-	function show_gedcom_record(xref) {
-		var recwin = window.open("gedrecord.php?fromfile=1&pid="+xref, "_blank", edit_window_specs);
-	}
-
-	function show_diff(diffurl) {
-		window.opener.location = diffurl;
-		return false;
-	}
-<?php
-echo '</script>';
 echo '<div id="pending"><h2>', WT_I18N::translate('Pending changes'), '</h2>';
 
 switch ($action) {
@@ -87,7 +83,7 @@ case 'accept':
 			update_record($change->new_gedcom, $gedcom_id, false);
 		}
 		WT_DB::prepare("UPDATE `##change` SET status='accepted' WHERE change_id=?")->execute(array($change->change_id));
-		AddToLog("Accepted change {$change->change_id} for {$change->xref} / {$change->gedcom_name} into database", 'edit');
+		Log::addEditLog("Accepted change {$change->change_id} for {$change->xref} / {$change->gedcom_name} into database");
 	}
 	break;
 case 'undoall':
@@ -114,7 +110,7 @@ case 'acceptall':
 			update_record($change->new_gedcom, $change->gedcom_id, false);
 		}
 		WT_DB::prepare("UPDATE `##change` SET status='accepted' WHERE change_id=?")->execute(array($change->change_id));
-		AddToLog("Accepted change {$change->change_id} for {$change->xref} / {$change->gedcom_name} into database", 'edit');
+		Log::addEditLog("Accepted change {$change->change_id} for {$change->xref} / {$change->gedcom_name} into database");
 	}
 	break;
 }
@@ -187,15 +183,15 @@ if ($changed_gedcoms) {
 		$output .= '<td class="list_value">';
 		foreach ($record->getFacts() as $fact) {
 			if ($fact->getTag() != 'CHAN') {
-				if ($fact->isNew()) {
+				if ($fact->isPendingAddition()) {
 					$output .= '<div class="new" title="' . strip_tags($fact->summary()) . '">' .$fact->getLabel() . '</div>';
-				} elseif ($fact->isOld()) {
+				} elseif ($fact->isPendingDeletion()) {
 					$output .= '<div class="old" title="' . strip_tags($fact->summary()) . '">' .$fact->getLabel() . '</div>';
 				}
 			}
 		}
 		echo '</td>';
-		$output .= "<td class=\"list_value\"><a href=\"#\" onclick=\"return reply('".$change->user_name."', '".WT_I18N::translate('Moderate pending changes')."')\" alt=\"".WT_I18N::translate('Send message')."\">";
+		$output .= "<td class=\"list_value\"><a href=\"#\" onclick=\"return reply('".$change->user_name."', '".WT_I18N::translate('Moderate pending changes')."')\" alt=\"".WT_I18N::translate('Send a message')."\">";
 		$output .= WT_Filter::escapeHtml($change->real_name);
 		$output .= ' - '.WT_Filter::escapeHtml($change->user_name).'</a></td>';
 		$output .= '<td class="list_value">'.$change->change_time.'</td>';

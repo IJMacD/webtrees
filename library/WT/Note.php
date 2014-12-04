@@ -1,8 +1,6 @@
 <?php
-// Class file for a Shared Note (NOTE) object
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2009 PGV Development Team.  All rights reserved.
@@ -19,74 +17,109 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * Class WT_Note - Class file for a Shared Note (NOTE) object
+ */
 class WT_Note extends WT_GedcomRecord {
 	const RECORD_TYPE = 'NOTE';
-	const SQL_FETCH   = "SELECT o_gedcom FROM `##other` WHERE o_id=? AND o_file=?";
-	const URL_PREFIX  = 'note.php?nid=';
+	const URL_PREFIX = 'note.php?nid=';
 
-	// Get the text contents of the note
+	/**
+	 * Get an instance of a note object.  For single records,
+	 * we just receive the XREF.  For bulk records (such as lists
+	 * and search results) we can receive the GEDCOM data as well.
+	 *
+	 * @param string       $xref
+	 * @param integer|null $gedcom_id
+	 * @param string|null  $gedcom
+	 *
+	 * @return WT_Note|null
+	 */
+	public static function getInstance($xref, $gedcom_id = WT_GED_ID, $gedcom = null) {
+		$record = parent::getInstance($xref, $gedcom_id, $gedcom);
+
+		if ($record instanceof WT_Note) {
+			return $record;
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Get the text contents of the note
+	 *
+	 * @return string|null
+	 */
 	public function getNote() {
-		if (preg_match('/^0 @' . WT_REGEX_TAG . '@ NOTE ?(.*(?:\n1 CONT ?.*)*)/', $this->gedcom.$this->pending, $match)) {
+		if (preg_match('/^0 @' . WT_REGEX_XREF . '@ NOTE ?(.*(?:\n1 CONT ?.*)*)/', $this->gedcom . $this->pending, $match)) {
 			return preg_replace("/\n1 CONT ?/", "\n", $match[1]);
 		} else {
 			return null;
 		}
 	}
 
-	// Implement note-specific privacy logic
-	protected function _canShowByType($access_level) {
+	/**
+	 * {@inheritdoc}
+	 */
+	protected function canShowByType($access_level) {
 		// Hide notes if they are attached to private records
-		$linked_ids=WT_DB::prepare(
+		$linked_ids = WT_DB::prepare(
 			"SELECT l_from FROM `##link` WHERE l_to=? AND l_file=?"
 		)->execute(array($this->xref, $this->gedcom_id))->fetchOneColumn();
 		foreach ($linked_ids as $linked_id) {
-			$linked_record=WT_GedcomRecord::getInstance($linked_id);
+			$linked_record = WT_GedcomRecord::getInstance($linked_id);
 			if ($linked_record && !$linked_record->canShow($access_level)) {
 				return false;
 			}
 		}
 
 		// Apply default behaviour
-		return parent::_canShowByType($access_level);
+		return parent::canShowByType($access_level);
 	}
 
-	// Generate a private version of this record
+	/**
+	 * {@inheritdoc}
+	 */
 	protected function createPrivateGedcomRecord($access_level) {
 		return '0 @' . $this->xref . '@ NOTE ' . WT_I18N::translate('Private');
 	}
 
-	// Fetch the record from the database
+	/**
+	 * {@inheritdoc}
+	 */
 	protected static function fetchGedcomRecord($xref, $gedcom_id) {
-		static $statement=null;
+		static $statement = null;
 
-		if ($statement===null) {
-			$statement=WT_DB::prepare("SELECT o_gedcom FROM `##other` WHERE o_id=? AND o_file=? AND o_type='NOTE'");
+		if ($statement === null) {
+			$statement = WT_DB::prepare("SELECT o_gedcom FROM `##other` WHERE o_id=? AND o_file=? AND o_type='NOTE'");
 		}
 
 		return $statement->execute(array($xref, $gedcom_id))->fetchOne();
 	}
 
-	// The 'name' of a note record is the first line.  This can be
-	// somewhat unwieldy if lots of CONC records are used.  Limit to 100 chars
-	protected function _addName($type, $value, $gedrec) {
-		if (utf8_strlen($value)<100) {
-			parent::_addName($type, $value, $gedrec);
-		} else {
-			parent::_addName($type, utf8_substr($value, 0, 100).WT_I18N::translate('…'), $gedrec);
-		}
-	}
+	/**
+	 * Create a name for this note - apply (and remove) markup, then take
+	 * a maximum of 100 characters from the first line.
+	 *
+	 * {@inheritdoc}
+	 */
+	public function extractNames() {
+		global $WT_TREE;
 
-	// Get an array of structures containing all the names in the record
-	public function getAllNames() {
-		// Uniquely, the NOTE objects have data in their level 0 record.
-		// Hence the REGEX passed in the second parameter
-		return parent::_getAllNames('NOTE', '0 @'.WT_REGEX_XREF.'@');
+		$text = $this->getNote();
+
+		if ($text) {
+			switch ($WT_TREE->getPreference('FORMAT_TEXT')) {
+			case 'markdown':
+				$text = WT_Filter::markdown($text);
+				$text = WT_Filter::unescapeHtml($text);
+				break;
+			}
+
+			list($text) = explode("\n", $text);
+			$this->addName('NOTE', strlen($text) > 100 ? mb_substr($text, 0, 100) . WT_I18N::translate('…') : $text, $this->getGedcom());
+		}
 	}
 }

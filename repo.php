@@ -3,10 +3,10 @@
 // reference this repository.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -20,17 +20,17 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'repo.php');
 require './includes/session.php';
 require_once WT_ROOT.'includes/functions/functions_print_lists.php';
 
-$controller=new WT_Controller_Repository();
+$controller = new WT_Controller_Repository();
 
 if ($controller->record && $controller->record->canShow()) {
 	$controller->pageHeader();
-	if ($controller->record->isOld()) {
+	if ($controller->record->isPendingDeletion()) {
 		if (WT_USER_CAN_ACCEPT) {
 			echo
 				'<p class="ui-state-highlight">',
@@ -48,7 +48,7 @@ if ($controller->record && $controller->record->canShow()) {
 				' ', help_link('pending_changes'),
 				'</p>';
 		}
-	} elseif ($controller->record->isNew()) {
+	} elseif ($controller->record->isPendingAddtion()) {
 		if (WT_USER_CAN_ACCEPT) {
 			echo
 				'<p class="ui-state-highlight">',
@@ -74,12 +74,14 @@ if ($controller->record && $controller->record->canShow()) {
 	exit;
 }
 
-$linkToID=$controller->record->getXref(); // Tell addmedia.php what to link to
-
-$controller
-	->addInlineJavascript('function show_gedcom_record() {window.open("gedrecord.php?pid=' . $controller->record->getXref() . '", "_blank", edit_window_specs);}')
-	->addInlineJavascript('jQuery("#repo-tabs").tabs();')
-	->addInlineJavascript('jQuery("#repo-tabs").css("visibility", "visible");');
+$controller->addInlineJavascript('
+	jQuery("#repo-tabs")
+		.tabs({
+			create: function(e, ui){
+				jQuery(e.target).css("visibility", "visible");  // prevent FOUC
+			}
+		});
+');
 
 $linked_sour = $controller->record->linkedSources('REPO');
 
@@ -128,7 +130,7 @@ echo '<div id="repo-tabs">
 		if ($controller->record->canEdit()) {
 			print_add_new_fact($controller->record->getXref(), $facts, 'REPO');
 			// new media
-			if (get_gedcom_setting(WT_GED_ID, 'MEDIA_UPLOAD') >= WT_USER_ACCESS_LEVEL) {
+			if ($WT_TREE->getPreference('MEDIA_UPLOAD') >= WT_USER_ACCESS_LEVEL) {
 				echo '<tr><td class="descriptionbox">';
 				echo WT_Gedcom_Tag::getLabel('OBJE');
 				echo '</td><td class="optionbox">';
@@ -146,7 +148,7 @@ echo '<div id="repo-tabs">
 	// Sources linked to this repository
 	if ($linked_sour) {
 		echo '<div id="source-repo">';
-		echo format_sour_table($linked_sour, $controller->record->getFullName());
+		echo format_sour_table($linked_sour);
 		echo '</div>';
 	}
 

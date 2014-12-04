@@ -2,10 +2,10 @@
 // Functions for exporting data
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,34 +19,27 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+use WT\Auth;
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
-// Tidy up a gedcom record on export, for compatibility/portability
+/**
+ * Tidy up a gedcom record on export, for compatibility/portability.
+ *
+ * @param string $rec
+ *
+ * @return string
+ */
 function reformat_record_export($rec) {
 	global $WORD_WRAPPED_NOTES;
 
 	$newrec='';
 	foreach (preg_split('/[\r\n]+/', $rec, -1, PREG_SPLIT_NO_EMPTY) as $line) {
-		// Escape @ characters
-		// TODO:
-		// Need to replace “@” with “@@”, unless it is either
-		// a) an xref, such as @I123@
-		// b) an escape, such as @#D FRENCH R@
-		if (false) {
-			$line=str_replace('@', '@@', $line);
-		}
 		// Split long lines
 		// The total length of a GEDCOM line, including level number, cross-reference number,
 		// tag, value, delimiters, and terminator, must not exceed 255 (wide) characters.
-		// Use quick strlen() check before using slower utf8_strlen() check
-		if (strlen($line)>WT_GEDCOM_LINE_LENGTH && utf8_strlen($line)>WT_GEDCOM_LINE_LENGTH) {
+		if (mb_strlen($line) > WT_GEDCOM_LINE_LENGTH) {
 			list($level, $tag)=explode(' ', $line, 3);
-			if ($tag!='CONT' && $tag!='CONC') {
+			if ($tag != 'CONT' && $tag != 'CONC') {
 				$level++;
 			}
 			do {
@@ -54,36 +47,42 @@ function reformat_record_export($rec) {
 				$pos=WT_GEDCOM_LINE_LENGTH;
 				if ($WORD_WRAPPED_NOTES) {
 					// Split on a space, and remove it (for compatibility with some desktop apps)
-					while ($pos && utf8_substr($line, $pos-1, 1)!=' ') {
+					while ($pos && mb_substr($line, $pos-1, 1)!=' ') {
 						--$pos;
 					}
-					if ($pos==strpos($line, ' ', 3)+1) {
+					if ($pos == strpos($line, ' ', 3) + 1) {
 						// No spaces in the data! Can’t split it :-(
 						break;
 					} else {
-						$newrec.=utf8_substr($line, 0, $pos-1).WT_EOL;
-						$line=$level.' CONC '.utf8_substr($line, $pos);
+						$newrec .= mb_substr($line, 0, $pos - 1).WT_EOL;
+						$line=$level.' CONC ' . mb_substr($line, $pos);
 					}
 				} else {
 					// Split on a non-space (standard gedcom behaviour)
-					while ($pos && utf8_substr($line, $pos-1, 1)==' ') {
+					while ($pos && mb_substr($line, $pos-1, 1) == ' ') {
 						--$pos;
 					}
-					if ($pos==strpos($line, ' ', 3)) {
+					if ($pos == strpos($line, ' ', 3)) {
 						// No non-spaces in the data! Can’t split it :-(
 						break;
 					}
-					$newrec.=utf8_substr($line, 0, $pos).WT_EOL;
-					$line=$level.' CONC '.utf8_substr($line, $pos);
+					$newrec .= mb_substr($line, 0, $pos) . WT_EOL;
+					$line = $level . ' CONC ' . mb_substr($line, $pos);
 				}
-			} while (utf8_strlen($line)>WT_GEDCOM_LINE_LENGTH);
+			} while (mb_strlen($line) > WT_GEDCOM_LINE_LENGTH);
 		}
-		$newrec.=$line.WT_EOL;
+		$newrec .= $line . WT_EOL;
 	}
 	return $newrec;
 }
 
-//Create a header for a (newly-created or already-imported) gedcom file.
+/**
+ * Create a header for a (newly-created or already-imported) gedcom file.
+ *
+ * @param string $gedfile
+ *
+ * @return string
+ */
 function gedcom_header($gedfile) {
 	$ged_id = get_id_from_gedcom($gedfile);
 
@@ -99,7 +98,7 @@ function gedcom_header($gedfile) {
 	$PLAC = "\n1 PLAC\n2 FORM City, County, State/Province, Country";
 	$COPR = "";
 	$SUBN = "";
-	$SUBM = "\n1 SUBM @SUBM@\n0 @SUBM@ SUBM\n1 NAME " . WT_USER_NAME; // The SUBM record is mandatory
+	$SUBM = "\n1 SUBM @SUBM@\n0 @SUBM@ SUBM\n1 NAME " . Auth::user()->getUserName(); // The SUBM record is mandatory
 
 	// Preserve some values from the original header
 	$record = WT_GedcomRecord::getInstance('HEAD');
@@ -134,7 +133,14 @@ function gedcom_header($gedfile) {
 	return $HEAD . $SOUR . $DEST . $DATE . $GEDC . $CHAR . $FILE . $COPR . $LANG . $PLAC . $SUBN . $SUBM . "\n";
 }
 
-// Prepend the GEDCOM_MEDIA_PATH to media filenames
+/**
+ * Prepend the GEDCOM_MEDIA_PATH to media filenames.
+ *
+ * @param string $rec
+ * @param string $path
+ *
+ * @return string
+ */
 function convert_media_path($rec, $path) {
 	if ($path && preg_match('/\n1 FILE (.+)/', $rec, $match)) {
 		$old_file_name=$match[1];
@@ -152,20 +158,21 @@ function convert_media_path($rec, $path) {
 			$rec=str_replace("\n1 FILE ".$old_file_name, "\n1 FILE ".$new_file_name, $rec);
 		}
 	}
+
 	return $rec;
 }
 
-/*
+/**
  * Export the database in GEDCOM format
  *
- *  input parameters:
- * $gedcom:         GEDCOM to be exported
- * $gedout:         Handle of output file
- * $exportOptions:  array of options for this Export operation as follows:
- *  'privatize':    which Privacy rules apply?  (none, visitor, user, manager)
- *  'toANSI':       should the output be produced in ANSI instead of UTF-8?  (yes, no)
- *  'path':         what constant should prefix all media file paths?  (eg: media/  or c:\my pictures\my family
- *  'slashes':      what folder separators apply to media file paths?  (forward, backward)
+ * @param string   $gedcom
+ * @param resource $gedout        Handle to a writable stream
+ * @param string[] $exportOptions Export options are as follows:
+ *                                'privatize':    which Privacy rules apply?  (none, visitor, user, manager)
+ *                                'toANSI':       should the output be produced in ANSI instead of UTF-8?  (yes, no)
+ *                                'path':         what constant should prefix all media file paths?  (eg: media/  or c:\my pictures\my family
+ *                                'slashes':      what folder separators apply to media file paths?  (forward, backward)
+ *
  */
 function export_gedcom($gedcom, $gedout, $exportOptions) {
 	global $GEDCOM;

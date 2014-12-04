@@ -4,10 +4,10 @@
 // Census information about an individual
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
  if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
@@ -30,22 +30,27 @@
 
 global $summary, $censyear, $censdate;
 
-$censdate  = new WT_Date('31 MAR 1901');
-$censyear   = $censdate->date1->y;
-
-$ctry       = 'UK';
-// $married    = WT_Date::Compare($censdate, $marrdate);
+$censdate = new WT_Date('31 MAR 1901');
+$censyear = $censdate->date1->y;
+$ctry     = 'UK';
 
 // === Set $married to "Not married as we only want the Birth name here" ===
 $married=-1;
 
-// var_dump($person->getAllNames());
 $nam = $person->getAllNames();
-if ($person->getDeathYear() == 0) { $DeathYr = ""; } else { $DeathYr = $person->getDeathYear(); }
-if ($person->getBirthYear() == 0) { $BirthYr = ""; } else { $BirthYr = $person->getBirthYear(); }
-$fulln   = rtrim($nam[0]['givn'],'*')." ".$nam[0]['surname'];
-$fulln   = str_replace("@N.N.", "(".WT_I18N::translate('unknown').")", $fulln);
-$fulln   = str_replace("@P.N.", "(".WT_I18N::translate('unknown').")", $fulln);
+if ($person->getDeathYear() == 0) {
+	$DeathYr = '';
+} else {
+	$DeathYr = $person->getDeathYear();
+}
+if ($person->getBirthYear() == 0) {
+	$BirthYr = '';
+} else {
+	$BirthYr = $person->getBirthYear();
+}
+$fulln = rtrim($nam[0]['givn'],'*')." ".$nam[0]['surname'];
+$fulln = str_replace("@N.N.", "(".WT_I18N::translate('unknown').")", $fulln);
+$fulln = str_replace("@P.N.", "(".WT_I18N::translate('unknown').")", $fulln);
 $wholename = $fulln;
 
 echo '<script src="', WT_STATIC_URL, WT_MODULES_DIR, 'GEDFact_assistant/_CENS/js/dynamicoptionlist.js"></script>';
@@ -59,7 +64,7 @@ echo '</script>';
 // Header of assistant window =====================================================
 echo '<div class="cens_header">';
 echo '<div class="cens_header_left">';
-echo WT_I18N::translate('Head of Household:');
+echo WT_I18N::translate('Head of household:');
 echo ' ', $wholename;
 echo '</div>';
 if ($summary) {
@@ -88,7 +93,7 @@ echo '</div>';
 ?>
 <div class="optionbox cens_textinput">
 	<div class="cens_textinput_left">
-		<input type="button" value="<?php echo WT_I18N::translate('Add/Insert Blank Row'); ?>" onclick="insertRowToTable('', '', '', '', '', '', '', '', 'Age', '', '', '', '', '', '');">
+		<input type="button" value="<?php echo WT_I18N::translate('Add/insert a blank row'); ?>" onclick="insertRowToTable('', '', '', '', '', '', '', '', 'Age', '', '', '', '', '', '');">
 	</div>
 	<div class="cens_textinput_right">
 		<?php echo WT_I18N::translate('Add'); ?>

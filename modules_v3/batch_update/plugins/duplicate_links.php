@@ -1,11 +1,6 @@
 <?php
-// Batch Update plugin for phpGedView - remove duplicate links in records
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
-//
-// Derived from PhpGedView
-// Copyright (C) 2008 Greg Roach.  All rights reserved.
+// Copyright (C) 2014 Greg Roach
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,35 +14,63 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * Class duplicate_links_bu_plugin Batch Update plugin: remove duplicate links in records
+ */
 class duplicate_links_bu_plugin extends base_plugin {
-	static function getName() {
+	/**
+	 * User-friendly name for this plugin.
+	 *
+	 * @return string
+	 */
+	public function getName() {
 		return WT_I18N::translate('Remove duplicate links');
 	}
 
-	static function getDescription() {
+	/**
+	 * Description / help-text for this plugin.
+	 *
+	 * @return string
+	 */
+	public function getDescription() {
 		return WT_I18N::translate('A common error is to have multiple links to the same record, for example listing the same child more than once in a family record.');
 	}
 
-	// Default is to operate on INDI records
-	function getRecordTypesToUpdate() {
+	/**
+	 * This plugin will update all types of record.
+	 *
+	 * @return string[]
+	 */
+	public function getRecordTypesToUpdate() {
 		return array('INDI', 'FAM', 'SOUR', 'REPO', 'NOTE', 'OBJE');
 	}
 
-	static function doesRecordNeedUpdate($xref, $gedrec) {
+	/**
+	 * Does this record need updating?
+	 *
+	 * @param string $xref
+	 * @param string $gedrec
+	 *
+	 * @return boolean
+	 */
+	public function doesRecordNeedUpdate($xref, $gedrec) {
 		return
 			preg_match('/(\n1.*@.+@.*(?:(?:\n[2-9].*)*))(?:\n1.*(?:\n[2-9].*)*)*\1/', $gedrec) ||
 			preg_match('/(\n2.*@.+@.*(?:(?:\n[3-9].*)*))(?:\n2.*(?:\n[3-9].*)*)*\1/', $gedrec) ||
 			preg_match('/(\n3.*@.+@.*(?:(?:\n[4-9].*)*))(?:\n3.*(?:\n[4-9].*)*)*\1/', $gedrec);
 	}
 
-	static function updateRecord($xref, $gedrec) {
+	/**
+	 * Apply any updates to this record
+	 *
+	 * @param string $xref
+	 * @param string $gedrec
+	 *
+	 * @return string
+	 */
+	public function updateRecord($xref, $gedrec) {
 		return preg_replace(
 			array(
 				'/(\n1.*@.+@.*(?:(?:\n[2-9].*)*))((?:\n1.*(?:\n[2-9].*)*)*\1)/',

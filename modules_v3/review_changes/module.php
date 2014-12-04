@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,25 +19,23 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use WT\Auth;
+use WT\User;
 
 class review_changes_WT_Module extends WT_Module implements WT_Module_Block {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		return /* I18N: Name of a module */ WT_I18N::translate('Pending changes');
 	}
 
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		return /* I18N: Description of the “Pending changes” module */ WT_I18N::translate('A list of changes that need moderator approval, and email notifications.');
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function getBlock($block_id, $template=true, $cfg=null) {
 		global $ctype, $WEBTREES_EMAIL;
 
@@ -61,30 +59,32 @@ class review_changes_WT_Module extends WT_Module implements WT_Module_Block {
 
 		if ($changes && $sendmail=='yes') {
 			// There are pending changes - tell moderators/managers/administrators about them.
-			if (WT_TIMESTAMP - WT_Site::preference('LAST_CHANGE_EMAIL') > (60*60*24*$days)) {
+			if (WT_TIMESTAMP - WT_Site::getPreference('LAST_CHANGE_EMAIL') > (60*60*24*$days)) {
 				// Which users have pending changes?
-				foreach (get_all_users() as $user_id=>$user_name) {
-					if (get_user_setting($user_id, 'contactmethod') != 'none') {
+				foreach (User::all() as $user) {
+					if ($user->getPreference('contactmethod') !== 'none') {
 						foreach (WT_Tree::getAll() as $tree) {
-							if (exists_pending_change($user_id, $tree->tree_id)) {
-								WT_Mail::system_message(
+							if (exists_pending_change($user, $tree)) {
+								WT_I18N::init($user->getPreference('language'));
+								WT_Mail::systemMessage(
 									$tree,
-									$user_id,
+									$user,
 									WT_I18N::translate('Pending changes'),
 									WT_I18N::translate('There are pending changes for you to moderate.') .
 									WT_Mail::EOL . WT_MAIL::EOL .
 									'<a href="' . WT_SERVER_NAME . WT_SCRIPT_PATH . 'index.php?ged=' . WT_GEDURL . '">' . WT_SERVER_NAME . WT_SCRIPT_PATH . 'index.php?ged=' . WT_GEDURL . '</a>'
 								);
+								WT_I18N::init(WT_LOCALE);
 							}
 						}
 					}
 				}
-				WT_Site::preference('LAST_CHANGE_EMAIL', WT_TIMESTAMP);
+				WT_Site::setPreference('LAST_CHANGE_EMAIL', WT_TIMESTAMP);
 			}
 			if (WT_USER_CAN_EDIT) {
 				$id=$this->getName().$block_id;
 				$class=$this->getName().'_block';
-				if ($ctype=='gedcom' && WT_USER_GEDCOM_ADMIN || $ctype=='user' && WT_USER_ID) {
+				if ($ctype === 'gedcom' && WT_USER_GEDCOM_ADMIN || $ctype === 'user' && Auth::check()) {
 					$title='<i class="icon-admin" title="'.WT_I18N::translate('Configure').'" onclick="modalDialog(\'block_edit.php?block_id='.$block_id.'\', \''.$this->getTitle().'\');"></i>';
 				} else {
 					$title='';
@@ -96,8 +96,8 @@ class review_changes_WT_Module extends WT_Module implements WT_Module_Block {
 					$content .= "<a href=\"#\" onclick=\"window.open('edit_changes.php','_blank', chan_window_specs); return false;\">".WT_I18N::translate('There are pending changes for you to moderate.')."</a><br>";
 				}
 				if ($sendmail=="yes") {
-					$content .= WT_I18N::translate('Last email reminder was sent ').format_timestamp(WT_Site::preference('LAST_CHANGE_EMAIL'))."<br>";
-					$content .= WT_I18N::translate('Next email reminder will be sent after ').format_timestamp(WT_Site::preference('LAST_CHANGE_EMAIL')+(60*60*24*$days))."<br><br>";
+					$content .= WT_I18N::translate('Last email reminder was sent ').format_timestamp(WT_Site::getPreference('LAST_CHANGE_EMAIL'))."<br>";
+					$content .= WT_I18N::translate('Next email reminder will be sent after ').format_timestamp(WT_Site::getPreference('LAST_CHANGE_EMAIL')+(60*60*24*$days))."<br><br>";
 				}
 				$changes=WT_DB::prepare(
 					"SELECT xref".
@@ -129,22 +129,22 @@ class review_changes_WT_Module extends WT_Module implements WT_Module_Block {
 		}
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function loadAjax() {
 		return false;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isUserBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isGedcomBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function configureBlock($block_id) {
 		if (WT_Filter::postBool('save') && WT_Filter::checkCsrf()) {
 			set_block_setting($block_id, 'days',     WT_Filter::postInteger('num', 1, 180, 7));

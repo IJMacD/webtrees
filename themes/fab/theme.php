@@ -2,7 +2,7 @@
 // FAB theme
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Based on standard theme, which is Copyright (C) 2002 to 2010 PGV Development Team.
 //
@@ -18,7 +18,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
@@ -26,10 +26,10 @@ if (!defined('WT_WEBTREES')) {
 }
 
 // Theme name - this needs double quotes, as file is scanned/parsed by script
-$theme_name="F.A.B.";
+$theme_name="F.A.B."; /* I18N: Name of a theme. */ WT_I18N::translate('F.A.B.');
 
 // A version number in the path prevents browser-cache problems during upgrade
-define('WT_CSS_URL', WT_THEME_URL . 'css-1.5.1/');
+define('WT_CSS_URL', WT_THEME_URL . 'css-1.6.0/');
 
 $headerfile = WT_THEME_DIR.'header.php';
 $footerfile = WT_THEME_DIR.'footer.php';
@@ -58,8 +58,8 @@ $WT_IMAGES = array(
 
 // Fan chart
 $fanChart = array(
-	'font'     => WT_ROOT.'includes/fonts/DejaVuSans.ttf',
-	'size'     => '7px',
+	'font'     => WT_ROOT . 'includes/fonts/DejaVuSans.ttf',
+	'size'     => 7,
 	'color'    => '#000000',
 	'bgColor'  => '#eeeeee',
 	'bgMColor' => '#b1cff0',

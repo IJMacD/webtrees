@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,32 +19,27 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 class descendancy_report_WT_Module extends WT_Module implements WT_Module_Report {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		// This text also appears in the .XML file - update both together
 		return /* I18N: Name of a module/report */ WT_I18N::translate('Descendants');
 	}
 
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getDescription() {
 		// This text also appears in the .XML file - update both together
 		return /* I18N: Description of the “Descendants” module */ WT_I18N::translate('A report of an individual’s descendants, in a narrative style.');
 	}
 
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function defaultAccessLevel() {
 		return WT_PRIV_PUBLIC;
 	}
 
-	// Implement WT_Module_Report - a module can provide many reports
+	/** {@inheritdoc} */
 	public function getReportMenus() {
 		global $controller;
 

@@ -2,7 +2,7 @@
 // Welcome page for the administration module
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,7 +16,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'admin_site_upgrade.php');
 
@@ -36,7 +38,7 @@ $latest_version_html = '<span dir="ltr">' . $latest_version . '</span>';
 $download_url_html   = '<b dir="auto"><a href="' . WT_Filter::escapeHtml($download_url) . '">' . WT_Filter::escapeHtml($download_url) . '</a></b>';
 
 // Show a friendly message while the site is being upgraded
-$lock_file           = __DIR__ . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'site-offline.txt';
+$lock_file           = __DIR__ . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'offline.txt';
 $lock_file_html      = '<span dir="ltr">' . WT_Filter::escapeHtml($lock_file) . '</span>';
 $lock_file_text      = WT_I18N::translate('This site is being upgraded.  Try again in a few minutes.') . PHP_EOL . format_timestamp(WT_TIMESTAMP) .  WT_I18N::translate('UTC');
 
@@ -51,7 +53,7 @@ $themes_action       = WT_Filter::post('themes',   'ignore|disable');
 
 $controller = new WT_Controller_Page();
 $controller
-	->requireAdminLogin()
+	->restrictAccess(Auth::isAdmin())
 	->setPageTitle(WT_I18N::translate('Upgrade wizard'))
 	->pageHeader();
 
@@ -102,7 +104,7 @@ if ($changes) {
 	echo '<br>', WT_I18N::translate('You should accept or reject all pending changes before upgrading.'), $icon_failure;
 	echo '<br><button onclick="window.open(\'edit_changes.php\',\'_blank\', chan_window_specs); return false;"">', WT_I18N::translate('Pending changes'), '</button>';
 	echo '</li></ul></form>';
-	exit;	
+	exit;
 } else {
 	echo '<br>', WT_I18N::translate('There are no pending changes.'), $icon_success;
 }
@@ -201,7 +203,7 @@ if ($custom_modules) {
 	echo '<br>', '<button type="submit" name="modules" value="disable">', WT_I18N::translate('Disable these modules'), '</button> — ', WT_I18N::translate('You can re-enable these modules after the upgrade.');
 	echo '<br>', '<button type="submit" name="modules" value="ignore">', /* I18N: Ignore the warnings, and [...] */ WT_I18N::translate('Upgrade anyway'), '</button> — ', WT_I18N::translate('Caution: old modules may not work, or they may prevent webtrees from working.');
 	echo '</li></ul></form>';
-	exit;	
+	exit;
 } else {
 	if ($modules_action != 'ignore') {
 		echo '<br>', WT_I18N::translate('No custom modules are enabled.'), $icon_success;
@@ -264,7 +266,7 @@ if ($custom_themes) {
 	echo '<br>', '<button type="submit" name="themes" value="disable">', WT_I18N::translate('Disable these themes'), '</button> — ', WT_I18N::translate('You can re-enable these themes after the upgrade.');
 	echo '<br>', '<button type="submit" name="themes" value="ignore">', WT_I18N::translate('Upgrade anyway'), '</button> — ', WT_I18N::translate('Caution: old themes may not work, or they may prevent webtrees from working.');
 	echo '</li></ul></form>';
-	exit;	
+	exit;
 } else {
 	if ($themes_action != 'ignore') {
 		echo '<br>', WT_I18N::translate('No custom themes are enabled.'), $icon_success;
@@ -281,6 +283,7 @@ echo '</li>'; flush();
 echo '<li>', /* I18N: The system is about to [...] */ WT_I18N::translate('Export all family trees to GEDCOM files…');
 
 foreach (WT_Tree::getAll() as $tree) {
+	reset_timeout();
 	$filename = WT_DATA_DIR . $tree->tree_name . date('-Y-m-d') . '.ged';
 	if ($tree->exportGedcom($filename)) {
 		echo '<br>', WT_I18N::translate('Family tree exported to %s.', '<span dir="ltr">' . $filename . '</span>'), $icon_success;
@@ -301,13 +304,14 @@ echo '<li>', /* I18N: The system is about to [...]; %s is a URL. */ WT_I18N::tra
 $zip_file   = WT_DATA_DIR . basename($download_url);
 $zip_dir    = WT_DATA_DIR . basename($download_url, '.zip');
 $zip_stream = fopen($zip_file, 'w');
+reset_timeout();
 $start_time = microtime(true);
 WT_File::fetchUrl($download_url, $zip_stream);
 $end_time   = microtime(true);
 $zip_size   = filesize($zip_file);
 fclose($zip_stream);
 
-echo '<br>', /* I18N: %1$s is a number of KB, %2$s is a (fractional) number of seconds */ WT_I18N::translate('%1$sKB were downloaded in %2$s seconds.', WT_I18N::number($zip_size / 1024), WT_I18N::number($end_time - $start_time, 2));
+echo '<br>', /* I18N: %1$s is a number of KB, %2$s is a (fractional) number of seconds */ WT_I18N::translate('%1$s KB were downloaded in %2$s seconds.', WT_I18N::number($zip_size / 1024), WT_I18N::number($end_time - $start_time, 2));
 if ($zip_size) {
 	echo $icon_success;
 } else {
@@ -335,12 +339,14 @@ $archive = new PclZip($zip_file);
 $res = $archive->properties();
 if (!is_array($res) || $res['status'] != 'ok') {
 	echo '<br>', WT_I18N::translate('An error occurred when unzipping the file.'), $icon_failure;
+	echo '<br>', $archive->errorInfo(true);
 	echo '</li></ul></form>';
-	exit;	
+	exit;
 }
 
 $num_files = $res['nb'];
 
+reset_timeout();
 $start_time = microtime(true);
 $res = $archive->extract(
 	PCLZIP_OPT_PATH,         $zip_dir,
@@ -354,18 +360,18 @@ if (is_array($res)) {
 		// Note that we're stripping the initial "webtrees/", so the top folder will fail.
 		if ($result['status'] != 'ok' && $result['filename'] != 'webtrees/') {
 			echo '<br>', WT_I18N::translate('An error occurred when unzipping the file.'), $icon_failure;
-			echo '<pre>';
-			var_dump($result);
-			echo '</pre>';
+			echo '<pre>', $result['status'], '</pre>';
+			echo '<pre>', $result['filename'], '</pre>';
 			echo '</li></ul></form>';
-			exit;	
+			exit;
 		}
 	}
 	echo '<br>', /* I18N: [...] from the .ZIP file, %2$s is a (fractional) number of seconds */ WT_I18N::plural('%1$s file was extracted in %2$s seconds.', '%1$s files were extracted in %2$s seconds.', count($res), count($res), WT_I18N::number($end_time - $start_time, 2)), $icon_success;
 } else {
 	echo '<br>', WT_I18N::translate('An error occurred when unzipping the file.'), $icon_failure;
+	echo '<pre>', $archive->errorInfo(true), '</pre>';
 	echo '</li></ul></form>';
-	exit;	
+	exit;
 }
 
 echo '</li>'; flush();
@@ -376,6 +382,7 @@ echo '</li>'; flush();
 
 echo '<li>', WT_I18N::translate('Check file permissions…');
 
+reset_timeout();
 $iterator = new RecursiveDirectoryIterator($zip_dir);
 $iterator->setFlags(RecursiveDirectoryIterator::SKIP_DOTS);
 foreach (new RecursiveIteratorIterator($iterator) as $file) {
@@ -421,6 +428,7 @@ echo '<li>', /* I18N: The system is about to [...] */ WT_I18N::translate('Copy f
 @copy('library/WT/Gedcom/Code/Rela.php', 'library/WT/Gedcom/Code/Rela' . date('-Y-m-d') . '.php');
 @copy('library/WT/Gedcom/Tag.php', 'library/WT/Gedcom/Tag' . date('-Y-m-d') . '.php');
 
+reset_timeout();
 $start_time = microtime(true);
 $res = $archive->extract(
 	PCLZIP_OPT_PATH,        WT_ROOT,
@@ -440,7 +448,7 @@ if (is_array($res)) {
 } else {
 	echo '<br>', WT_I18N::translate('An error occurred when unzipping the file.'), $icon_failure;
 	echo '</li></ul></form>';
-	exit;	
+	exit;
 }
 
 echo '</li>'; flush();
@@ -465,6 +473,7 @@ echo '</li>'; flush();
 
 echo '<li>', /* I18N: The system is about to [...] */ WT_I18N::translate('Delete temporary files…');
 
+reset_timeout();
 if (WT_File::delete($zip_dir)) {
 	echo '<br>', WT_I18N::translate('The folder %s was deleted.', '<span dir="auto">' . $zip_dir . '</span>'), $icon_success;
 } else {
@@ -481,3 +490,10 @@ echo '</li>';
 echo '</ul>';
 
 echo '<p>', WT_I18N::translate('The upgrade is complete.'), '</p>';
+
+// Reset the time limit, as timeouts in this script could leave the upgrade incomplete.
+function reset_timeout() {
+	if (!ini_get('safe_mode') && strpos(ini_get('disable_functions'), 'set_time_limit')===false) {
+		set_time_limit(ini_get('max_execution_time'));
+	}
+}

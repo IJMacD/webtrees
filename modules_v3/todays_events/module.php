@@ -2,7 +2,7 @@
 // Classes and libraries for module system
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2010 John Finlay
@@ -19,35 +19,32 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use WT\Auth;
 
 class todays_events_WT_Module extends WT_Module implements WT_Module_Block {
-	// Extend class WT_Module
+	/** {@inheritdoc} */
 	public function getTitle() {
 		return /* I18N: Name of a module */ WT_I18N::translate('On this day');
 	}
 
-	// Extend class WT_Module
-	public /* I18N: Description of the “On This Day” module */ function getDescription() {
-		return WT_I18N::translate('A list of the anniversaries that occur today.');
+	/** {@inheritdoc} */
+	public function getDescription() {
+		return /* I18N: Description of the “On this day” module */ WT_I18N::translate('A list of the anniversaries that occur today.');
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function getBlock($block_id, $template=true, $cfg=null) {
 		global $ctype;
 
 		require_once WT_ROOT.'includes/functions/functions_print_lists.php';
 
-		$filter       =get_block_setting($block_id, 'filter',   true);
-		$onlyBDM      =get_block_setting($block_id, 'onlyBDM',  true);
-		$infoStyle    =get_block_setting($block_id, 'infoStyle','table');
-		$sortStyle    =get_block_setting($block_id, 'sortStyle','alpha');
-		$block        =get_block_setting($block_id, 'block',    true);
+		$filter    = get_block_setting($block_id, 'filter',    true);
+		$onlyBDM   = get_block_setting($block_id, 'onlyBDM',   true);
+		$infoStyle = get_block_setting($block_id, 'infoStyle', 'table');
+		$sortStyle = get_block_setting($block_id, 'sortStyle', 'alpha');
+		$block     = get_block_setting($block_id, 'block',     true);
 		if ($cfg) {
 			foreach (array('filter', 'onlyBDM', 'infoStyle', 'sortStyle', 'block') as $name) {
 				if (array_key_exists($name, $cfg)) {
@@ -56,16 +53,16 @@ class todays_events_WT_Module extends WT_Module implements WT_Module_Block {
 			}
 		}
 
-		$todayjd=WT_CLIENT_JD;
+		$todayjd = WT_CLIENT_JD;
 
-		$id=$this->getName().$block_id;
-		$class=$this->getName().'_block';
-		if ($ctype=='gedcom' && WT_USER_GEDCOM_ADMIN || $ctype=='user' && WT_USER_ID) {
-			$title='<i class="icon-admin" title="'.WT_I18N::translate('Configure').'" onclick="modalDialog(\'block_edit.php?block_id='.$block_id.'\', \''.$this->getTitle().'\');"></i>';
+		$id    = $this->getName() . $block_id;
+		$class = $this->getName() . '_block';
+		if ($ctype === 'gedcom' && WT_USER_GEDCOM_ADMIN || $ctype === 'user' && Auth::check()) {
+			$title = '<i class="icon-admin" title="' . WT_I18N::translate('Configure') . '" onclick="modalDialog(\'block_edit.php?block_id=' . $block_id . '\', \'' . $this->getTitle() . '\');"></i>';
 		} else {
-			$title='';
+			$title = '';
 		}
-		$title.=$this->getTitle();
+		$title .= $this->getTitle();
 
 		$content = '';
 		switch ($infoStyle) {
@@ -83,31 +80,31 @@ class todays_events_WT_Module extends WT_Module implements WT_Module_Block {
 
 		if ($template) {
 			if ($block) {
-				require WT_THEME_DIR.'templates/block_small_temp.php';
+				require WT_THEME_DIR . 'templates/block_small_temp.php';
 			} else {
-				require WT_THEME_DIR.'templates/block_main_temp.php';
+				require WT_THEME_DIR . 'templates/block_main_temp.php';
 			}
 		} else {
 			return $content;
 		}
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function loadAjax() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isUserBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function isGedcomBlock() {
 		return true;
 	}
 
-	// Implement class WT_Module_Block
+	/** {@inheritdoc} */
 	public function configureBlock($block_id) {
 		if (WT_Filter::postBool('save') && WT_Filter::checkCsrf()) {
 			set_block_setting($block_id, 'filter',    WT_Filter::postBool('filter'));
@@ -129,7 +126,7 @@ class todays_events_WT_Module extends WT_Module implements WT_Module_Block {
 
 		$onlyBDM=get_block_setting($block_id, 'onlyBDM', true);
 		echo '<tr><td class="descriptionbox wrap width33">';
-		echo WT_I18N::translate('Show only Births, Deaths, and Marriages?');
+		echo WT_I18N::translate('Show only births, deaths, and marriages?');
 		echo '</td><td class="optionbox">';
 		echo edit_field_yes_no('onlyBDM', $onlyBDM);
 		echo '</td></tr>';
@@ -147,8 +144,8 @@ class todays_events_WT_Module extends WT_Module implements WT_Module_Block {
 		echo '</td><td class="optionbox">';
 		echo select_edit_control('sortStyle', array(
 			/* I18N: An option in a list-box */ 'alpha'=>WT_I18N::translate('sort by name'),
-			/* I18N: An option in a list-box */ 'anniv'=>WT_I18N::translate('sort by date'
-		)), null, $sortStyle, '');
+			/* I18N: An option in a list-box */ 'anniv'=>WT_I18N::translate('sort by date'),
+		), null, $sortStyle, '');
 		echo '</td></tr>';
 
 		$block=get_block_setting($block_id, 'block', true);

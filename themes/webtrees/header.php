@@ -2,10 +2,10 @@
 // Header for webtrees theme
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
@@ -27,6 +29,7 @@ if (!defined('WT_WEBTREES')) {
 }
 
 global $WT_IMAGES;
+
 // This theme uses the jQuery “colorbox” plugin to display images
 $this
 	->addExternalJavascript(WT_JQUERY_COLORBOX_URL)
@@ -47,9 +50,6 @@ $this
 	<!--[if IE]>
 	<link rel="stylesheet" type="text/css" href="<?php echo WT_CSS_URL; ?>msie.css">
 	<![endif]-->
-	<?php if (WT_USE_LIGHTBOX) { ?>
-	<link rel="stylesheet" type="text/css" href="<?php echo WT_STATIC_URL, WT_MODULES_DIR; ?>lightbox/css/album_page.css">
-	<?php } ?>
 </head>
 <body id="body">
 	<?php if ($view!='simple') { ?>
@@ -60,8 +60,8 @@ $this
 		<ul id="extra-menu" class="makeMenu">
 			<li>
 				<?php
-				if (WT_USER_ID) {
-					echo '<a href="edituser.php">', WT_I18N::translate('Logged in as '), ' ', getUserFullName(WT_USER_ID), '</a></li> <li>', logout_link();
+				if (Auth::check()) {
+					echo '<a href="edituser.php">', WT_I18N::translate('Logged in as '), ' ', WT_Filter::escapeHtml(Auth::user()->getRealName()), '</a></li> <li>', logout_link();
 				} else {
 					echo login_link();
 				}
@@ -79,7 +79,7 @@ $this
 				<input type="hidden" name="action" value="general">
 				<input type="hidden" name="ged" value="<?php echo WT_GEDCOM; ?>">
 				<input type="hidden" name="topsearch" value="yes">
-				<input type="search" name="query" size="25" placeholder="<?php echo WT_I18N::translate('Search'); ?>" dir="auto">
+				<input type="search" name="query" size="25" placeholder="<?php echo WT_I18N::translate('Search'); ?>">
 				<input type="image" class="image" src="<?php echo $WT_IMAGES['search']; ?>" alt="<?php echo WT_I18N::translate('Search'); ?>" title="<?php echo WT_I18N::translate('Search'); ?>">
 			</form>
 		</div>

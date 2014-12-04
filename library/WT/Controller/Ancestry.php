@@ -1,8 +1,6 @@
 <?php
-// Controller for the ancestry chart
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
@@ -19,13 +17,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * Class WT_Controller_Ancestry - Controller for the ancestry chart
+ */
 class WT_Controller_Ancestry extends WT_Controller_Chart {
 	var $pid = '';
 	var $user = false;
@@ -38,8 +34,11 @@ class WT_Controller_Ancestry extends WT_Controller_Chart {
 	var $show_full;
 	var $cellwidth;
 
+	/**
+	 * Startup activity
+	 */
 	function __construct() {
-		global $USE_RIN, $MAX_ALIVE_AGE, $GEDCOM, $bwidth, $bheight, $cbwidth, $cbheight, $pbwidth, $pbheight, $PEDIGREE_FULL_DETAILS, $MAX_DESCENDANCY_GENERATIONS;
+		global $bwidth, $bheight, $cbwidth, $cbheight, $pbwidth, $pbheight, $PEDIGREE_FULL_DETAILS;
 		global $DEFAULT_PEDIGREE_GENERATIONS, $PEDIGREE_GENERATIONS, $MAX_PEDIGREE_GENERATIONS, $OLD_PGENS, $box_width, $Dbwidth, $Dbheight;
 		global $show_full;
 
@@ -88,11 +87,11 @@ class WT_Controller_Ancestry extends WT_Controller_Chart {
 	/**
 	 * print a child ascendancy
 	 *
-	 * @param string $pid individual Gedcom Id
-	 * @param int $sosa child sosa number
-	 * @param int $depth the ascendancy depth to show
+	 * @param         $person
+	 * @param integer $sosa  child sosa number
+	 * @param integer $depth the ascendancy depth to show
 	 */
-	function print_child_ascendancy($person, $sosa, $depth) {
+	public function printChildAscendancy($person, $sosa, $depth) {
 		global $OLD_PGENS, $WT_IMAGES, $Dindent, $pidarr, $box_width;
 
 		if ($person) {
@@ -111,11 +110,11 @@ class WT_Controller_Ancestry extends WT_Controller_Chart {
 			echo '<img src="', $WT_IMAGES['spacer'], '" height="3" width="2" alt="">';
 			echo '<img src="', $WT_IMAGES['hline'], '" height="3" width="', ($Dindent-2), '" alt=""></td><td>';
 		}
-		print_pedigree_person($person, 1);
+		print_pedigree_person($person);
 		echo '</td>';
 		echo '<td>';
 		if ($sosa>1) {
-			print_url_arrow($pid, '?rootid='.$pid.'&amp;PEDIGREE_GENERATIONS='.$OLD_PGENS.'&amp;show_full='.$this->show_full.'&amp;box_width='.$box_width.'&amp;chart_style='.$this->chart_style.'&amp;ged='.WT_GEDURL, $label, 3);
+			print_url_arrow('?rootid='.$pid.'&amp;PEDIGREE_GENERATIONS='.$OLD_PGENS.'&amp;show_full='.$this->show_full.'&amp;box_width='.$box_width.'&amp;chart_style='.$this->chart_style.'&amp;ged='.WT_GEDURL, $label, 3);
 		}
 		echo '</td>';
 		echo '<td class="details1">&nbsp;<span dir="ltr" class="person_box'. (($sosa==1)?'NN':(($sosa%2)?'F':'')) . '">&nbsp;', $sosa, '&nbsp;</span>&nbsp;';
@@ -149,8 +148,8 @@ class WT_Controller_Ancestry extends WT_Controller_Chart {
 			echo '</span>';
 			// display parents recursively - or show empty boxes
 			echo '<ul style="list-style: none; display: block;" id="sosa_', $sosa, '">';
-			$this->print_child_ascendancy($family->getHusband(), $sosa*2, $depth-1);
-			$this->print_child_ascendancy($family->getWife(), $sosa*2+1, $depth-1);
+			$this->printChildAscendancy($family->getHusband(), $sosa*2, $depth-1);
+			$this->printChildAscendancy($family->getWife(), $sosa*2+1, $depth-1);
 			echo '</ul>';
 		}
 		echo '</li>';

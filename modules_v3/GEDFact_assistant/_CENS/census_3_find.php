@@ -2,10 +2,10 @@
 // Facility for Census assistant that will allow a user to search for a person
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2010 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2010 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,9 +19,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-$controller=new WT_Controller_Simple();
+$controller = new WT_Controller_Simple();
 
 $filter   = WT_Filter::get('filter');
 $action   = WT_Filter::get('action');
@@ -49,22 +49,11 @@ $controller
 				window.opener.insertRowToTable(id, name);
 			}
 			window.opener.<?php echo $callback; ?>(id);
-			if (window.opener.pastename) window.opener.pastename(name);
+			if (window.opener.pastename) {
+				window.opener.pastename(name);
+			}
 			<?php if (!$multiple) echo "window.close();"; ?>
 		}
-	}
-	function checknames(frm) {
-		if (document.forms[0].subclick) button = document.forms[0].subclick.value;
-		else button = "";
-		if (frm.filter.value.length<2&button!="all") {
-			alert("<?php echo WT_I18N::translate('Please enter more than one character'); ?>");
-			frm.filter.focus();
-			return false;
-		}
-		if (button=="all") {
-			frm.filter.value = "";
-		}
-		return true;
 	}
 </script>
 <?php
@@ -86,7 +75,7 @@ if ($action=="filter") {
 	$myindilist=search_indis_names($filter_array, array(WT_GED_ID), 'AND');
 	if ($myindilist) {
 		echo "<tr><td class=\"list_value_wrap\"><ul>";
-		usort($myindilist, array('WT_GedcomRecord', 'Compare'));
+		usort($myindilist, array('WT_GedcomRecord', 'compare'));
 		foreach ($myindilist as $indi ) {
 			$nam = $indi->getAllNames();
 			$wholename = rtrim($nam[0]['givn'],'*')."&nbsp;".$nam[0]['surname'];

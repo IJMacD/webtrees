@@ -1,8 +1,6 @@
 <?php
-//	Controller for the compact chart
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
@@ -19,13 +17,11 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * Class WT_Controller_Compact - Controller for the compact chart
+ */
 class WT_Controller_Compact extends WT_Controller_Chart {
 	// Data for the view
 	public $show_thumbs=false;
@@ -33,6 +29,9 @@ class WT_Controller_Compact extends WT_Controller_Chart {
 	// Date for the controller
 	private $treeid=array();
 
+	/**
+	 * Startup activity
+	 */
 	public function __construct() {
 		parent::__construct();
 
@@ -47,13 +46,18 @@ class WT_Controller_Compact extends WT_Controller_Chart {
 		} else {
 			$this->setPageTitle(WT_I18N::translate('Compact tree'));
 		}
-		$this->treeid=ancestry_array($this->rootid, 5);
+		$this->treeid = $this->sosaAncestors(5);
 	}
 
-	function sosa_person($n) {
+	/**
+	 * @param integer $n
+	 *
+	 * @return string
+	 */
+	public function sosaIndividual($n) {
 		global $SHOW_HIGHLIGHT_IMAGES;
 
-		$indi=WT_Individual::getInstance($this->treeid[$n]);
+		$indi = $this->treeid[$n];
 
 		if ($indi && $indi->canShowName()) {
 			$name=$indi->getFullName();
@@ -96,30 +100,35 @@ class WT_Controller_Compact extends WT_Controller_Chart {
 		}
 	}
 
-	function sosa_arrow($n, $arrow_dir) {
+	/**
+	 * @param integer $n
+	 * @param string  $arrow_dir
+	 *
+	 * @return string
+	 */
+	public function sosaArrow($n, $arrow_dir) {
 		global $TEXT_DIRECTION;
 
-		$pid = $this->treeid[$n];
+		$indi = $this->treeid[$n];
 
-		$arrow_swap = array("l"=>"0", "r"=>"1", "u"=>"2", "d"=>"3");
-
-		$arrow_dir = substr($arrow_dir,0,1);
-		if ($TEXT_DIRECTION=="rtl") {
-			if ($arrow_dir=="l") {
-				$arrow_dir="r";
-			} elseif ($arrow_dir=="r") {
-				$arrow_dir="l";
+		$arrow_dir = substr($arrow_dir, 0, 1);
+		if ($TEXT_DIRECTION == 'rtl') {
+			if ($arrow_dir=='l') {
+				$arrow_dir = 'r';
+			} elseif ($arrow_dir == 'r') {
+				$arrow_dir = 'l';
 			}
 		}
 
-		$indi=WT_Individual::getInstance($pid);
 		if ($indi) {
-			$title=WT_I18N::translate('Compact tree of %s', $indi->getFullName());
-			$text = '<a class="icon-'.$arrow_dir.'arrow" title="'.strip_tags($title).'" href="?rootid='.$pid;
-			if ($this->show_thumbs) $text .= "&amp;show_thumbs=".$this->show_thumbs;
+			$title = WT_I18N::translate('Compact tree of %s', $indi->getFullName());
+			$text = '<a class="icon-' . $arrow_dir . 'arrow" title="' . strip_tags($title) . '" href="?rootid=' . $indi->getXref();
+			if ($this->show_thumbs) {
+				$text .= "&amp;show_thumbs=".$this->show_thumbs;
+			}
 			$text .= "\"></a>";
 		} else {
-			$text = '<i class="icon-'.$arrow_dir.'arrow"></i>';
+			$text = '<i class="icon-' . $arrow_dir . 'arrow"></i>';
 		}
 
 		return $text;

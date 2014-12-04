@@ -1,8 +1,6 @@
 <?php
-// System for generating menus.
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Copyright (C) 2002 to 2009 PGV Development Team. All rights reserved.
@@ -19,166 +17,187 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * Class WT_Menu - System for generating menus.
+ */
 class WT_Menu {
+	/** @var string The text to be displayed in the mneu */
 	var $label = ' ';
-	var $labelpos = 'right';
+
+	/** @var string The target URL or href*/
 	var $link = '#';
+
+	/** @var string The CSS ID to be used for this menu item */
+	var $id = null;
+
+	/** @var string An onclick action, typically used with a link of "#" */
 	var $onclick = null;
-	var $flyout = 'down';
-	var $class = '';
-	var $id=null;
-	var $submenuclass = '';
-	var $iconclass = '';
-	var $target = null;
-	var $parentmenu = null;
+
+	/** @var WT_Menu[] */
 	var $submenus;
-	var $helpermenu = false;
+
+	/** @var string Used internally to create javascript menus */
+	var $parentmenu = null;
+
+	/** @var string Used to format javascript menus */
+	var $submenuclass = '';
+
+	/** @var string Used to format javascript menus */
+	var $iconclass = '';
+
+	/** @var string Used to format javascript menus */
+	var $class = '';
 
 	/**
-	* Constructor for the menu class
-	* @param string $label the label for the menu item (usually a wt_lang variable)
-	* @param string $link The link that the user should be taken to when clicking on the menuitem
-	* @param string $pos The position of the label relative to the icon (right, left, top, bottom)
-	* @param string $flyout The direction where any submenus should appear relative to the menu item (right, down)
-	*/
-	function __construct($label=' ', $link='#', $id=null, $labelpos='right', $flyout='down')
-	{
-		$this->label   =$label;
-		$this->labelpos=$labelpos;
-		$this->link    =$link;
-		$this->id      =$id;
-		$this->flyout  =$flyout;
-		$this->submenus=array();
+	 * Constructor for the menu class
+	 *
+	 * @param string    $label    The label for the menu item
+	 * @param string    $link     The target URL
+	 * @param string    $id       An CSS identifier
+	 * @param string    $onclick  A javascript onclick handler
+	 * @param WT_Menu[] $submenus Any submenus
+	 */
+	function __construct($label, $link = '#', $id = '', $onclick = '', $submenus = array()) {
+		$this
+			->setLabel($label)
+			->setLink($link)
+			->setId($id)
+			->setOnClick($onclick)
+			->setSubmenus($submenus);
 	}
 
-	function addLabel($label=' ', $pos='right')
-	{
-		if ($label) $this->label = $label;
-		$this->labelpos = $pos;
+	/**
+	 * Convert this menu to an HTML list, for easy rendering of
+	 * lists of menus/nulls.
+	 *
+	 * @return string
+	 */
+	public function __toString() {
+		return $this->getMenuAsList();
 	}
 
-	function addLink($link='#')
-	{
-		$this->link = $link;
-	}
-
-	function addOnclick($onclick)
-	{
-		$this->onclick = $onclick;
-	}
-
-	function addFlyout($flyout='down')
-	{
-		$this->flyout = $flyout;
-	}
-
-	function addClass($class, $submenuclass='', $iconclass='icon_general')
-	{
+	/**
+	 * Set the CSS classes for this menu
+	 *
+	 * @param string $class
+	 * @param string $submenuclass
+	 * @param string $iconclass
+	 */
+	function addClass($class, $submenuclass = '', $iconclass = 'icon_general') {
 		$this->class = $class;
 		$this->submenuclass = $submenuclass;
 		$this->iconclass = $iconclass;
 	}
 
-	function addTarget($target)
-	{
-		$this->target = $target;
+	/**
+	 * @return string
+	 */
+	public function getId() {
+		return $this->id;
 	}
 
-	function addSubMenu($obj)
-	{
-		$this->submenus[] = $obj;
+	/**
+	 * @param string $id
+	 *
+	 * @return $this
+	 */
+	public function setId($id) {
+		$this->id = $id;
+
+		return $this;
 	}
 
-	//
-	public function __toString() {
-		return $this->getMenuAsList();
+	/**
+	 * @return string
+	 */
+	public function getLabel() {
+		return $this->label;
 	}
 
-	// Get the menu as a simple list - for accessible interfaces, search engines and CSS menus
-	function getMenuAsList() {
-		$link = '';
-		$class = "";
-		$data = "";
-		$content = '<span class="menu-text">'.$this->label.'</span>';
-		if ($this->link) {
-			if ($this->target !== null) {
-				$link .= ' target="'.$this->target.'"';
-			}
-			if ($this->submenus) {
-				$class .= " dropdown-toggle";
-			}
-			if ($this->link=='#') {
-				if ($this->onclick !== null) {
-					$link .= ' onclick="'.$this->onclick.'"';
-				}
-			}
-			if($this->iconclass){
-				$content = '<i class="'.$this->iconclass.' fa-large"></i> '.$content;
-			}
-			if($this->helpermenu){
-				$data = ' data-toggle="dropdown"';
-			}
-			$html='<a class="'.$class.'" href="'.$this->link.'"'.$link.$data.'>'.$content.'</a>';
-		} else {
-			$html=$this->label;
-		}
-		if ($this->submenus) {
-			if(!$this->helpermenu){
-				// Main site menu
-				$html.='<ul class="submenu">';
-			}
-			else {
-				// Top bar 'menus'
-				$html.='<ul class="dropdown-navbar dropdown-menu pull-right">';
-			}
-			foreach ($this->submenus as $submenu) {
-				if ($submenu) {
-					if ($submenu->submenus) {
-						$submenu->iconclass.=' icon_arrow';
-					}
-					$html.=$submenu->getMenuAsList();
-				}
-			}
-			$html.='</ul>';
-		}
-		if ($this->id) {
-			return '<li id="'.$this->id.'">'.$html.'</li>';
-		} else {
-			return '<li>'.$html.'</li>';
-		}
+	/**
+	 * @param string $label
+	 *
+	 * @return $this
+	 */
+	public function setLabel($label) {
+		$this->label = $label;
+
+		return $this;
 	}
 
+	/**
+	 * @return string
+	 */
+	public function getLink() {
+		return $this->link;
+	}
+
+	/**
+	 * @param string $link
+	 *
+	 * @return $this
+	 */
+	public function setLink($link) {
+		$this->link = $link;
+
+		return $this;
+	}
+
+	/**
+	 * @return null
+	 */
+	public function getOnclick() {
+		return $this->onclick;
+	}
+
+	/**
+	 * @param string $onclick
+	 *
+	 * @return $this
+	 */
+	public function setOnclick($onclick) {
+		$this->onclick = $onclick;
+
+		return $this;
+	}
+
+	/**
+	 * Add a submenu to this menu
+	 *
+	 * @param WT_Menu []
+	 */
+	function addSubmenu($menu) {
+		$this->submenus[] = $menu;
+	}
+
+	/**
+	 * Render this menu using javascript popups..
+	 *
+	 * @return string
+	 */
 	function getMenu() {
-		global $menucount, $TEXT_DIRECTION, $WT_IMAGES;
+		global $menucount, $TEXT_DIRECTION;
 
 		if (!isset($menucount)) {
 			$menucount = 0;
 		} else {
 			$menucount++;
 		}
-		$id = $menucount.rand();
+		$id = $menucount . rand();
 		$c = count($this->submenus);
 		$output = "<div id=\"menu{$id}\" class=\"{$this->class}\">";
 		$link = "<a href=\"{$this->link}\" onmouseover=\"";
 		if ($c >= 0) {
-			$link .= "show_submenu('menu{$id}_subs', 'menu{$id}', '{$this->flyout}');";
+			$link .= "show_submenu('menu{$id}_subs', 'menu{$id}');";
 		}
 		$link .= '" onmouseout="';
 		if ($c >= 0) {
 			$link .= "timeout_submenu('menu{$id}_subs');";
 		}
-		if ($this->onclick !== null) {
+		if ($this->onclick) {
 			$link .= "\" onclick=\"{$this->onclick}";
-		}
-		if ($this->target !== null) {
-			$link .= '" target="'.$this->target;
 		}
 		$link .= "\">";
 		$output .= $link;
@@ -193,13 +212,6 @@ class WT_Menu {
 				$output .= '<div style="text-align: right;">';
 			}
 			$output .= "<div id=\"menu{$id}_subs\" class=\"{$this->submenuclass}\" style=\"position: absolute; visibility: hidden; z-index: 100;";
-			if ($this->flyout == 'right') {
-				if ($TEXT_DIRECTION == 'ltr') {
-					$output .= ' left: 80px;';
-				} else {
-					$output .= ' right: 50px;';
-				}
-			}
 			$output .= "\" onmouseover=\"show_submenu('{$this->parentmenu}'); show_submenu('{$submenuid}');\" onmouseout=\"timeout_submenu('menu{$id}_subs');\">";
 			foreach ($this->submenus as $submenu) {
 				$submenu->parentmenu = $submenuid;
@@ -208,14 +220,63 @@ class WT_Menu {
 			$output .= "</div></div>";
 		}
 		$output .= "</div>";
+
 		return $output;
 	}
 
 	/**
-	* returns the number of submenus in this menu
-	* @return int
-	*/
-	function subCount() {
-		return count($this->submenus);
+	 * Render this menu as an HTML list
+	 *
+	 * @return string
+	 */
+	function getMenuAsList() {
+		if ($this->iconclass) {
+			$class = ' class="' . $this->iconclass . '"';
+		} else {
+			$class = '';
+		}
+		if ($this->onclick) {
+			$onclick = ' onclick="' . $this->onclick . '"';
+		} else {
+			$onclick = '';
+		}
+		if ($this->link) {
+			$link = ' href="' . $this->link . '"';
+		} else {
+			$link = '';
+		}
+		if ($this->id) {
+			$id = ' id="' . $this->id . '"';
+		} else {
+			$id = '';
+		}
+		$html = '<a' . $link . $class . $onclick . '>' . $this->label . '</a>';
+		if ($this->submenus) {
+			$html .= '<ul>';
+			foreach ($this->submenus as $submenu) {
+				$html .= $submenu->getMenuAsList();
+			}
+			$html .= '</ul>';
+		}
+
+		return '<li' . $id . '>' . $html . '</li>';
+	}
+
+	/**
+	 * @return WT_Menu[]
+	 */
+	public function getSubmenus() {
+		return $this->submenus;
+	}
+
+	/**
+	 * @param WT_Menu[] $submenus
+	 *
+	 * @return $this
+	 */
+	public function setSubmenus(array $submenus) {
+		$this->submenus = $submenus;
+
+		return $this;
 	}
 }

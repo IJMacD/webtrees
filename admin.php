@@ -2,7 +2,7 @@
 // Welcome page for the administration module
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,48 +16,48 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
+use WT\User;
 
 define('WT_SCRIPT_NAME', 'admin.php');
 
 require './includes/session.php';
-require WT_ROOT.'includes/functions/functions_edit.php';
+require WT_ROOT . 'includes/functions/functions_edit.php';
 
-$controller=new WT_Controller_Page();
+$controller = new WT_Controller_Page();
 $controller
-	->requireManagerLogin()
-	->addInlineJavascript('jQuery("#x").accordion({active:0, icons:{ "header": "ui-icon-triangle-1-s", "headerSelected": "ui-icon-triangle-1-n" }, heightStyle: "content"});')
-	->addInlineJavascript('jQuery("#tree_stats").accordion({icons:{ "header": "ui-icon-triangle-1-s", "headerSelected": "ui-icon-triangle-1-n" }});')
-	->addInlineJavascript('jQuery("#changes").accordion({icons:{ "header": "ui-icon-triangle-1-s", "headerSelected": "ui-icon-triangle-1-n" }});')
+	->restrictAccess(Auth::isManager())
+	->addInlineJavascript('jQuery("#x").accordion({heightStyle: "content"});')
+	->addInlineJavascript('jQuery("#tree_stats").accordion();')
+	->addInlineJavascript('jQuery("#changes").accordion();')
 	->addInlineJavascript('jQuery("#content_container").css("visibility", "visible");')
 	->setPageTitle(WT_I18N::translate('Administration'))
 	->pageHeader();
 
 // Check for updates
-$latest_version_txt=fetch_latest_version();
+$latest_version_txt = fetch_latest_version();
 if (preg_match('/^[0-9.]+\|[0-9.]+\|/', $latest_version_txt)) {
-	list($latest_version, $earliest_version, $download_url)=explode('|', $latest_version_txt);
+	list($latest_version, $earliest_version, $download_url) = explode('|', $latest_version_txt);
 } else {
 	// Cannot determine the latest version
-	$latest_version='';
+	$latest_version = '';
 }
 
 // Delete old files (if we can).
 $old_files = array();
 foreach (old_paths() as $path) {
 	if (file_exists($path)) {
-		delete_recursively($path);
-		// we may not have permission to delete.  Is it still there?
-		if (file_exists($path)) {
+		if (!WT_File::delete($path)) {
+			// We may be unable to delete it.  If so, tell the user to delete it manually.
 			$old_files[] = $path;
 		}
 	}
 }
 
 // Total number of users
-$total_users = WT_DB::prepare(
-	"SELECT COUNT(*) FROM `##user` WHERE user_id>0"
-)->fetchOne();
+$total_users = User::count();
 
 // Total number of administrators
 $total_administrators = WT_DB::prepare(
@@ -77,12 +77,12 @@ $total_managers = WT_DB::prepare(
 
 // Number of users who have not verified their email address
 $unverified = WT_DB::prepare(
-	"SELECT COUNT(*) FROM `##user_setting` WHERE setting_name='verified' AND setting_value=0"
+	"SELECT COUNT(*) FROM `##user_setting` WHERE setting_name = 'verified' AND setting_value = 0"
 )->fetchOne();
 
 // Number of users whose accounts are not approved by an administrator
 $unapproved = WT_DB::prepare(
-	"SELECT COUNT(*) FROM `##user_setting` WHERE setting_name='verified_by_admin' AND setting_value=0"
+	"SELECT COUNT(*) FROM `##user_setting` WHERE setting_name = 'verified_by_admin' AND setting_value = 0"
 )->fetchOne();
 
 // Number of users of each language
@@ -96,36 +96,36 @@ $user_languages = WT_DB::prepare(
 $stats = new WT_Stats(WT_GEDCOM);
 
 ?>
-<div id="content_container" style="visibility:hidden">
+<div id="content_container" style="visibility: hidden;">
 	<div id="x">
 		<h2><?php echo WT_WEBTREES, ' ', WT_VERSION; ?></h2>
 		<div id="about">
 			<p>
-				<?php echo WT_I18N::translate('These pages provide access to all the configuration settings and management tools for this <b>webtrees</b> site.'); ?>
+				<?php echo WT_I18N::translate('These pages provide access to all the configuration settings and management tools for this webtrees site.'); ?>
 			</p>
 			<p>
 				<?php echo /* I18N: %s is a URL/link to the project website */ WT_I18N::translate('Support and documentation can be found at %s.', ' <a class="current" href="http://webtrees.net/">webtrees.net</a>'); ?>
 			</p>
-			<?php if (WT_USER_IS_ADMIN && $latest_version && version_compare(WT_VERSION, $latest_version)<0) { ?>
+			<?php if (Auth::isAdmin() && $latest_version && version_compare(WT_VERSION, $latest_version) < 0) { ?>
 			<p>
 				<?php echo WT_I18N::translate('A new version of webtrees is available.'); ?>
 				<a href="admin_site_upgrade.php" class="error">
-					<?php echo WT_I18N::translate('Upgrade to webtrees %s', WT_Filter::escapeHtml($latest_version)); ?>
+					<?php echo /* I18N: %s is a version number */ WT_I18N::translate('Upgrade to webtrees %s', WT_Filter::escapeHtml($latest_version)); ?>
 				</a>
 			</p>
 			<?php } ?>
 		</div>
 
-		<?php if (WT_USER_IS_ADMIN && $old_files) { ?>
-		<h2><span class="warning">', WT_I18N::translate('Old files found'), '</span></h2>
+		<?php if (Auth::isAdmin() && $old_files) { ?>
+		<h2><span class="warning"><?php echo WT_I18N::translate('Old files found'); ?></span></h2>
 		<div>
 			<p>
 				<?php echo WT_I18N::translate('Files have been found from a previous version of webtrees.  Old files can sometimes be a security risk.  You should delete them.'); ?>
 			</p>
 			<ul>
-				<?php foreach ($old_files as $file) { ?>
-				<li dir="ltr"><?php echo $path; ?></li>';
-				<?php } ?>	
+				<?php foreach ($old_files as $old_file) { ?>
+				<li dir="ltr"><?php echo $old_file; ?></li>
+				<?php } ?>
 			</ul>
 		</div>
 		<?php } ?>
@@ -143,26 +143,26 @@ $stats = new WT_Stats(WT_GEDCOM);
 						<td><?php echo $total_administrators; ?></td>
 					</tr>
 					<tr>
-					<td colspan="2"><?php echo WT_I18N::translate('Managers'); ?></td>
+						<td colspan="2"><?php echo WT_I18N::translate('Managers'); ?></td>
 					</tr>
-					<?php foreach ($total_managers as $gedcom_title=>$n) { ?>
+					<?php foreach ($total_managers as $gedcom_title => $n) { ?>
 					<tr>
 						<td>&nbsp;&nbsp;<?php echo WT_Filter::escapeHtml($gedcom_title); ?></td>
 						<td><?php echo $n; ?></td>
 					</tr>
 					<?php } ?>
 					<tr>
-						<td><?php echo WT_I18N::translate('Unverified by User'); ?></td>
+						<td><?php echo WT_I18N::translate('Not verified by the user'); ?></td>
 						<td><?php echo $unverified; ?></td>
 					</tr>
 					<tr>
-						<td><?php echo WT_I18N::translate('Unverified by Administrator'); ?></td>
+						<td><?php echo WT_I18N::translate('Not approved by an administrator'); ?></td>
 						<td><?php echo $unapproved; ?></td>
 					</tr>
 					<tr>
 						<td colspan="2"><?php echo WT_I18N::translate('Users’ languages'); ?></td>
 					</tr>
-					<?php foreach ($user_languages as $language=>$n) { ?>
+					<?php foreach ($user_languages as $language => $n) { ?>
 					<tr>
 						<td>&nbsp;&nbsp;<?php echo WT_I18N::languageName($language); ?></td>
 						<td><?php echo $n; ?></td>
@@ -172,7 +172,7 @@ $stats = new WT_Stats(WT_GEDCOM);
 						<td colspan="2"><?php echo WT_I18N::translate('Users logged in'); ?></td>
 					</tr>
 					<tr>
-						<td colspan="2"><?php echo $stats->_usersLoggedIn('list'); ?></td>
+						<td colspan="2"><?php echo $stats->usersLoggedInList(); ?></td>
 					</tr>
 				</tbody>
 			</table>
@@ -284,9 +284,13 @@ $stats = new WT_Stats(WT_GEDCOM);
 
 <?php
 
-// This is a list of old files and directories, from earlier versions of webtrees, that can be deleted
-// It was generated with the help of a command like this
-// git diff 1.4.3..master --name-status | grep ^D
+/**
+ * This is a list of old files and directories, from earlier versions of webtrees, that can be deleted.
+ * It was generated with the help of a command like this:
+ * git diff 1.6.0..master --name-status | grep ^D
+ *
+ * @return string[]
+ */
 function old_paths() {
 	return array(
 		// Removed in 1.0.2
@@ -583,22 +587,62 @@ function old_paths() {
 		WT_ROOT.'themes/minimal/css-1.5.0',
 		WT_ROOT.'themes/webtrees/css-1.5.0',
 		WT_ROOT.'themes/xenea/css-1.5.0',
+		// Removed in 1.5.2
+		WT_ROOT.'js/webtrees-1.5.1.js',
+		WT_ROOT.'themes/_administration/css-1.5.1',
+		WT_ROOT.'themes/clouds/css-1.5.1',
+		WT_ROOT.'themes/colors/css-1.5.1',
+		WT_ROOT.'themes/fab/css-1.5.1',
+		WT_ROOT.'themes/minimal/css-1.5.1',
+		WT_ROOT.'themes/webtrees/css-1.5.1',
+		WT_ROOT.'themes/xenea/css-1.5.1',
+		// Removed in 1.5.3
+		WT_ROOT.'js/jquery-1.10.2.js',
+		WT_ROOT.'js/jquery-ui-1.10.3.js',
+		WT_ROOT.'js/webtrees-1.5.2.js',
+		WT_ROOT.'library/htmlpurifier-4.6.0',
+		//WT_ROOT.'library/Michelf', On windows, this would delete library/michelf
+		WT_ROOT.'library/tcpdf',
+		WT_ROOT.'library/Zend',
+		WT_ROOT.'modules_v3/GEDFact_assistant/_CENS/census_asst_help.php',
+		WT_ROOT.'modules_v3/googlemap/admin_places.php',
+		WT_ROOT.'modules_v3/googlemap/defaultconfig.php',
+		WT_ROOT.'modules_v3/googlemap/googlemap.php',
+		WT_ROOT.'modules_v3/googlemap/placehierarchy.php',
+		WT_ROOT.'modules_v3/googlemap/places_edit.php',
+		WT_ROOT.'modules_v3/googlemap/util.js',
+		WT_ROOT.'modules_v3/googlemap/wt_v3_places_edit.js.php',
+		WT_ROOT.'modules_v3/googlemap/wt_v3_places_edit_overlays.js.php',
+		WT_ROOT.'modules_v3/googlemap/wt_v3_street_view.php',
+		WT_ROOT.'readme.html',
+		WT_ROOT.'themes/_administration/css-1.5.2',
+		WT_ROOT.'themes/clouds/css-1.5.2',
+		WT_ROOT.'themes/colors/css-1.5.2',
+		WT_ROOT.'themes/fab/css-1.5.2',
+		WT_ROOT.'themes/minimal/css-1.5.2',
+		WT_ROOT.'themes/webtrees/css-1.5.2',
+		WT_ROOT.'themes/xenea/css-1.5.2',
+		// Removed in 1.6.0
+		WT_ROOT.'downloadbackup.php',
+		WT_ROOT.'includes/functions/functions_utf-8.php',
+		WT_ROOT.'js/jquery.colorbox-1.4.15.js',
+		WT_ROOT.'js/jquery.cookie-1.4.0.js',
+		WT_ROOT.'js/jquery.datatables-1.9.4.js',
+		WT_ROOT.'js/jquery.jeditable-1.7.1.js',
+		WT_ROOT.'js/jquery.wheelzoom-1.1.2.js',
+		WT_ROOT.'js/jquery-1.11.0.js',
+		WT_ROOT.'js/webtrees-1.5.3.js',
+		WT_ROOT.'library/WT/Debug.php',
+		WT_ROOT.'modules_v3/ckeditor/ckeditor-4.3.2-custom',
+		WT_ROOT.'site-php-version.php',
+		WT_ROOT.'themes/_administration/css-1.5.3',
+		WT_ROOT.'themes/clouds/css-1.5.3',
+		WT_ROOT.'themes/colors/css-1.5.3',
+		WT_ROOT.'themes/fab/css-1.5.3',
+		WT_ROOT.'themes/minimal/css-1.5.3',
+		WT_ROOT.'themes/webtrees/css-1.5.3',
+		WT_ROOT.'themes/xenea/css-1.5.3',
+		// Removed in 1.6.1
+		WT_ROOT.'includes/authentication.php',
 	);
-}
-
-// Delete a file or folder, ignoring errors
-function delete_recursively($path) {
-	@chmod($path, 0777);
-	if (is_dir($path)) {
-		$dir=opendir($path);
-		while ($dir!==false && (($file=readdir($dir))!==false)) {
-			if ($file!='.' && $file!='..') {
-				delete_recursively($path.'/'.$file);
-			}
-		}
-		closedir($dir);
-		@rmdir($path);
-	} else {
-		@unlink($path);
-	}
 }

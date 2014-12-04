@@ -2,10 +2,10 @@
 // Various functions used by the media DB interface
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,31 +19,44 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
+use WT\Log;
 
-// converts raw values from php.ini file into bytes
-// from http://www.php.net/manual/en/function.ini-get.php
+/**
+ * Convert raw values from php.ini file into bytes
+ *
+ * @param string $val
+ *
+ * @return integer
+ */
 function return_bytes($val) {
 	if (!$val) {
 		// no value was passed in, assume no limit and return -1
 		$val = -1;
 	}
-	$val = trim($val);
-	$last = strtolower($val{strlen($val)-1});
-	switch($last) {
-		case 'g': $val *= 1024;  // fallthrough
-		case 'm': $val *= 1024;  // fallthrough
-		case 'k': $val *= 1024;
+	switch (substr($val, -1)) {
+	case 'g':
+	case 'G':
+		return (int)$val * 1024 * 1024 * 1024;
+	case 'm':
+	case 'M':
+		return (int)$val * 1024 * 1024;
+	case 'k':
+	case 'K':
+		return (int)$val * 1024;
+	default:
+		return (int)$val;
 	}
-	return $val;
 }
 
-// attempts to determine whether there is enough memory to load a particular image
+/**
+ * Determine whether there is enough memory to load a particular image.
+ *
+ * @param string $serverFilename
+ *
+ * @return boolean
+ */
 function hasMemoryForImage($serverFilename) {
 	// find out how much total memory this script can access
 	$memoryAvailable = return_bytes(@ini_get('memory_limit'));
@@ -65,7 +78,7 @@ function hasMemoryForImage($serverFilename) {
 		} else {
 			// not enough memory to load this file
 			$image_info =  sprintf('%.2fKB, %d × %d %d bits %d channels', filesize($serverFilename)/1024, $imgsize[0], $imgsize[1], $imgsize['bits'], $imgsize['channels']);
-			AddToLog('Cannot create thumbnail '.$serverFilename.' ('.$image_info.') memory avail: '.$memoryAvailable.' used: '.$memoryUsed.' needed: '.$memoryNeeded.' spare: '.$memorySpare, 'media');
+			Log::addMediaLog('Cannot create thumbnail '.$serverFilename.' ('.$image_info.') memory avail: '.$memoryAvailable.' used: '.$memoryUsed.' needed: '.$memoryNeeded.' spare: '.$memorySpare);
 			return false;
 		}
 	} else {

@@ -2,7 +2,7 @@
 // Header for FAB theme
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
 // Modifications Copyright (c) 2010 Greg Roach
@@ -19,7 +19,9 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
@@ -53,22 +55,15 @@ echo
 	'<link type="text/css" rel="stylesheet" href="', WT_CSS_URL, 'style.css">',
 	'<!--[if IE]>',
 	'<link type="text/css" rel="stylesheet" href="', WT_CSS_URL, 'msie.css">',
-	'<![endif]-->';
-
-// Additional css files required (Only if Lightbox installed)
-if (WT_USE_LIGHTBOX) {
-	echo '<link rel="stylesheet" type="text/css" href="', WT_STATIC_URL, WT_MODULES_DIR, 'lightbox/css/album_page.css" media="screen">';
-}
-
-echo
+	'<![endif]-->',
 	'</head>',
 	'<body id="body">';
 
-if ($view!='simple') { // Use “simple” headers for popup windows
+if ($view != 'simple') { // Use “simple” headers for popup windows
 	echo '<div id="header" class="block">';
 	echo '<div id="header-user-links"><ul class="makeMenu">';
-	if (WT_USER_ID) {
-		echo '<li><a href="edituser.php">', getUserFullName(WT_USER_ID), '</a></li> <li>', logout_link(), '</li>';
+	if (Auth::check()) {
+		echo '<li><a href="edituser.php">', WT_Filter::escapeHtml(Auth::user()->getRealName()), '</a></li> <li>', logout_link(), '</li>';
 		if (WT_USER_CAN_ACCEPT && exists_pending_change()) {
 			echo ' <li><a href="#" onclick="window.open(\'edit_changes.php\',\'_blank\',chan_window_specs); return false;" style="color:red;">', WT_I18N::translate('Pending changes'), '</a></li>';
 		}
@@ -92,7 +87,7 @@ if ($view!='simple') { // Use “simple” headers for popup windows
 		'<input type="hidden" name="action" value="general">',
 		'<input type="hidden" name="ged" value="', WT_GEDCOM, '">',
 		'<input type="hidden" name="topsearch" value="yes">',
-		'<input type="search" name="query" size="20" placeholder="', WT_I18N::translate('Search'), '" dir="auto">',
+		'<input type="search" name="query" size="20" placeholder="', WT_I18N::translate('Search'), '">',
 		'</form></li>',
 		'</ul></div>';
 	$menu_items=array(

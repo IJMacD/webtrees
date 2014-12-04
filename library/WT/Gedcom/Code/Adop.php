@@ -1,8 +1,6 @@
 <?php
-// Functions and logic for GEDCOM "PEDI" codes
-//
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 Greg Roach
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,55 +14,76 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
-if (!defined('WT_WEBTREES')) {
-	header('HTTP/1.0 403 Forbidden');
-	exit;
-}
-
+/**
+ * Class WT_Gedcom_Code_Adop - Functions and logic for GEDCOM "PEDI" codes
+ */
 class WT_Gedcom_Code_Adop {
+	/** @var string[] A list of possible adoption codes */
+	private static $TYPES = array('BOTH', 'HUSB', 'WIFE');
 
-	private static $TYPES=array('BOTH', 'HUSB', 'WIFE');
-
-	// Translate a code, for an (optional) record
-	public static function getValue($type, $record=null) {
+	/**
+	 * Translate a code, for an (optional) record
+	 *
+	 * @param string               $type
+	 * @param WT_GedcomRecord|null $record
+	 *
+	 * @return string
+	 */
+	public static function getValue($type, WT_GedcomRecord $record = null) {
 		if ($record instanceof WT_Individual) {
-			$sex=$record->getSex();
+			$sex = $record->getSex();
 		} else {
-			$sex='U';
+			$sex = 'U';
 		}
 
 		switch ($type) {
 		case 'BOTH':
 			switch ($sex) {
-			case 'M': return WT_I18N::translate_c('MALE',   'Adopted by both parents');
-			case 'F': return WT_I18N::translate_c('FEMALE', 'Adopted by both parents');
-			default:  return WT_I18N::translate  (          'Adopted by both parents');
+			case 'M':
+				return WT_I18N::translate_c('MALE', 'Adopted by both parents');
+			case 'F':
+				return WT_I18N::translate_c('FEMALE', 'Adopted by both parents');
+			default:
+				return WT_I18N::translate('Adopted by both parents');
 			}
 		case 'HUSB':
 			switch ($sex) {
-			case 'M': return WT_I18N::translate_c('MALE',   'Adopted by father');
-			case 'F': return WT_I18N::translate_c('FEMALE', 'Adopted by father');
-			default:  return WT_I18N::translate  (          'Adopted by father');
+			case 'M':
+				return WT_I18N::translate_c('MALE', 'Adopted by father');
+			case 'F':
+				return WT_I18N::translate_c('FEMALE', 'Adopted by father');
+			default:
+				return WT_I18N::translate('Adopted by father');
 			}
 		case 'WIFE':
 			switch ($sex) {
-			case 'M': return WT_I18N::translate_c('MALE',   'Adopted by mother');
-			case 'F': return WT_I18N::translate_c('FEMALE', 'Adopted by mother');
-			default:  return WT_I18N::translate  (          'Adopted by mother');
+			case 'M':
+				return WT_I18N::translate_c('MALE', 'Adopted by mother');
+			case 'F':
+				return WT_I18N::translate_c('FEMALE', 'Adopted by mother');
+			default:
+				return WT_I18N::translate('Adopted by mother');
 			}
 		default:
 			return $type;
 		}
 	}
 
-	// A list of all possible values for PEDI
-	public static function getValues($record=null) {
-		$values=array();
+	/**
+	 * A list of all possible values for PEDI
+	 *
+	 * @param null WT_GedcomRecord|null $record
+	 *
+	 * @return string[]
+	 */
+	public static function getValues(WT_GedcomRecord $record = null) {
+		$values = array();
 		foreach (self::$TYPES as $type) {
-			$values[$type]=self::getValue($type, $record);
+			$values[$type] = self::getValue($type, $record);
 		}
+
 		// Don't sort these.  We want the order: both parents, father, mother
 		return $values;
 	}

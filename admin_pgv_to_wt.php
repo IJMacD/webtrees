@@ -2,7 +2,7 @@
 // PGV to webtrees transfer wizard
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,21 +16,23 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
+use WT\User;
 
 define('WT_SCRIPT_NAME', 'admin_pgv_to_wt.php');
 require './includes/session.php';
-//require WT_ROOT.'includes/functions/functions_edit.php';
 
 // We can only import into an empty system, so deny access if we have already created a gedcom or added users.
-if (WT_GED_ID || get_user_count()>1) {
-	header('Location: '.WT_SERVER_NAME.WT_SCRIPT_PATH);
+if (WT_GED_ID || count(User::all()) > 1) {
+	header('Location: ' . WT_SERVER_NAME.WT_SCRIPT_PATH);
 	exit;
 }
 
-$controller=new WT_Controller_Page();
+$controller = new WT_Controller_Page();
 $controller
-	->requireAdminLogin()
+	->restrictAccess(Auth::isAdmin())
 	->setPageTitle(WT_I18N::translate('PhpGedView to webtrees transfer wizard'));
 
 $error    = '';
@@ -60,7 +62,7 @@ if ($PGV_PATH) {
 		}
 		$wt_config=parse_ini_file(WT_ROOT.'data/config.ini.php');
 		if ($DBHOST!=$wt_config['dbhost']) {
-			$error=WT_I18N::translate('PhpGedView must use the same database as <b>webtrees</b>');
+			$error=WT_I18N::translate('PhpGedView must use the same database as webtrees.');
 			unset($wt_config);
 		} else {
 			unset($wt_config);
@@ -69,14 +71,14 @@ if ($PGV_PATH) {
 					"SELECT site_setting_value FROM `{$DBNAME}`.`{$TBLPREFIX}site_setting` WHERE site_setting_name='PGV_SCHEMA_VERSION'"
 				)->fetchOne();
 				if ($PGV_SCHEMA_VERSION<10) {
-					$error=WT_I18N::translate('The version of %s is too old', 'PhpGedView');
+					$error=WT_I18N::translate('The version of %s is too old.', 'PhpGedView');
 				} elseif ($PGV_SCHEMA_VERSION>14) {
-					$error=WT_I18N::translate('The version of %s is too new', 'PhpGedView');
+					$error=WT_I18N::translate('The version of %s is too new.', 'PhpGedView');
 				}
 			} catch (PDOException $ex) {
 				$error=
 					/* I18N: %s is a database name/identifier */
-					WT_I18N::translate('<b>webtrees</b> cannot connect to the PhpGedView database: %s.', $DBNAME.'@'.$DBHOST).
+					WT_I18N::translate('webtrees cannot connect to the PhpGedView database: %s.', $DBNAME.'@'.$DBHOST).
 					'<br>'.
 					/* I18N: %s is an error message */
 					WT_I18N::translate('MySQL gave the error: %s', $ex->getMessage());
@@ -98,12 +100,12 @@ echo
 		#container dl {margin:0 0 40px 25px;}
 		#container dt {display:inline; width: 320px; font-weight:normal; margin: 0 0 15px 0;}
 		#container dd {color: #81A9CB; margin-bottom:20px;font-weight:bold;}
-		#container p {color: #81A9CB; font-size: 14px; font-style: italic; font-weight:bold; padding: 0 5px 5px; align: top;}
+		#container p {color: #81A9CB; font-size: 14px; font-style: italic; font-weight:bold; padding: 0 5px 5px;}
 		h2 {color: #81A9CB;}
 		.good {color: green;}
 		.bad {color: red !important;}
 		.indifferent {color: blue;}
-		#container p.pgv  {color: black; font-size: 12px; font-style: normal; font-weight:normal; padding:0; margin:10px 0 0 320px}
+		#container p.pgv  {color: black; font-size: 12px; font-style: normal; font-weight:normal; padding:0; margin:10px 0 0 320px;}
 	</style>';
 
 if ($error || !$PGV_PATH) {
@@ -111,7 +113,7 @@ if ($error || !$PGV_PATH) {
 	echo '<div id="container">';
 	echo
 		'<h2>',
-		WT_I18N::translate('PhpGedView to <b>webtrees</b> transfer wizard'),
+		WT_I18N::translate('PhpGedView to webtrees transfer wizard'),
 		help_link('PGV_WIZARD'),
 		'</h2>';
 	if ($error) {
@@ -132,7 +134,7 @@ if ($error || !$PGV_PATH) {
 		'<form action="', WT_SCRIPT_NAME, '" method="post">',
 		'<p>', WT_I18N::translate('Where is your PhpGedView installation?'), '</p>',
 		'<dl>',
-		'<dt>',WT_I18N::translate('Installation directory'), '</dt>';
+		'<dt>',WT_I18N::translate('Installation folder'), '</dt>';
 	switch (count($pgv_dirs)) {
 	case '0':
 		echo '<dd><input type="text" name="PGV_PATH" size="40" value="" autofocus></dd>';
@@ -142,7 +144,7 @@ if ($error || !$PGV_PATH) {
 		break;
 	default:
 		echo '<dd><input type="text" name="PGV_PATH" size="40" value="" autofocus></dd>';
-		echo '<dt>', /* find better english before translating */ 'PhpGedView might be found in these locations', '</dt>';
+		echo '<dt>', WT_I18N::translate('PhpGedView might be installed in one of these folders:'), '</dt>';
 		echo '<dd>';
 		foreach ($pgv_dirs as $pgvpath) {
 			echo '<p class="pgv">', $pgvpath, '</p>';
@@ -175,32 +177,28 @@ WT_DB::exec("DELETE FROM `##user`                WHERE user_id>0");
 if (ob_get_level() == 0) ob_start();
 echo '<p>', $INDEX_DIRECTORY, DIRECTORY_SEPARATOR, 'config.php => wt_site_setting ...</p>';
 flush();
-if (ini_get('output_buffering')) {
-	ob_flush();
-}
+
 // TODO May need to set 'DATA_DIRECTORY' to $INDEX_DIRECTORY when dealing with media??
-@WT_Site::preference('USE_REGISTRATION_MODULE',         $USE_REGISTRATION_MODULE);
-@WT_Site::preference('REQUIRE_ADMIN_AUTH_REGISTRATION', $REQUIRE_ADMIN_AUTH_REGISTRATION);
-@WT_Site::preference('ALLOW_USER_THEMES',               $ALLOW_USER_THEMES);
-@WT_Site::preference('ALLOW_CHANGE_GEDCOM',             $ALLOW_CHANGE_GEDCOM);
-@WT_Site::preference('SESSION_TIME',                    $PGV_SESSION_TIME);
-@WT_Site::preference('SMTP_ACTIVE',                     $PGV_SMTP_ACTIVE ? 'external' : 'internal');
-@WT_Site::preference('SMTP_HOST',                       $PGV_SMTP_HOST);
-@WT_Site::preference('SMTP_HELO',                       $PGV_SMTP_HELO);
-@WT_Site::preference('SMTP_PORT',                       $PGV_SMTP_PORT);
-@WT_Site::preference('SMTP_AUTH',                       $PGV_SMTP_AUTH);
-@WT_Site::preference('SMTP_AUTH_USER',                  $PGV_SMTP_AUTH_USER);
-@WT_Site::preference('SMTP_AUTH_PASS',                  $PGV_SMTP_AUTH_PASS);
-@WT_Site::preference('SMTP_SSL',                        $PGV_SMTP_SSL);
-@WT_Site::preference('SMTP_FROM_NAME',                  $PGV_SMTP_FROM_NAME);
+@WT_Site::setPreference('USE_REGISTRATION_MODULE',         $USE_REGISTRATION_MODULE);
+@WT_Site::setPreference('REQUIRE_ADMIN_AUTH_REGISTRATION', $REQUIRE_ADMIN_AUTH_REGISTRATION);
+@WT_Site::setPreference('ALLOW_USER_THEMES',               $ALLOW_USER_THEMES);
+@WT_Site::setPreference('ALLOW_CHANGE_GEDCOM',             $ALLOW_CHANGE_GEDCOM);
+@WT_Site::setPreference('SESSION_TIME',                    $PGV_SESSION_TIME);
+@WT_Site::setPreference('SMTP_ACTIVE',                     $PGV_SMTP_ACTIVE ? 'external' : 'internal');
+@WT_Site::setPreference('SMTP_HOST',                       $PGV_SMTP_HOST);
+@WT_Site::setPreference('SMTP_HELO',                       $PGV_SMTP_HELO);
+@WT_Site::setPreference('SMTP_PORT',                       $PGV_SMTP_PORT);
+@WT_Site::setPreference('SMTP_AUTH',                       $PGV_SMTP_AUTH);
+@WT_Site::setPreference('SMTP_AUTH_USER',                  $PGV_SMTP_AUTH_USER);
+@WT_Site::setPreference('SMTP_AUTH_PASS',                  $PGV_SMTP_AUTH_PASS);
+@WT_Site::setPreference('SMTP_SSL',                        $PGV_SMTP_SSL);
+@WT_Site::setPreference('SMTP_FROM_NAME',                  $PGV_SMTP_FROM_NAME);
 
 ////////////////////////////////////////////////////////////////////////////////
 
 echo '<p>pgv_site_setting => wt_site_setting ...</p>';
 flush();
-if (ini_get('output_buffering')) {
-	ob_flush();
-}
+
 WT_DB::prepare(
 	"REPLACE INTO `##site_setting` (setting_name, setting_value)".
 	" SELECT site_setting_name, site_setting_value FROM `{$DBNAME}`.`{$TBLPREFIX}site_setting`".
@@ -212,9 +210,7 @@ WT_DB::prepare(
 if ($PGV_SCHEMA_VERSION>=12) {
 	echo '<p>pgv_gedcom => wt_gedcom ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	WT_DB::prepare(
 		"INSERT INTO `##gedcom` (gedcom_id, gedcom_name)".
 		" SELECT gedcom_id, gedcom_name FROM `{$DBNAME}`.`{$TBLPREFIX}gedcom`"
@@ -222,9 +218,7 @@ if ($PGV_SCHEMA_VERSION>=12) {
 
 	echo '<p>pgv_gedcom_setting => wt_gedcom_setting ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	WT_DB::prepare(
 		"INSERT INTO `##gedcom_setting` (gedcom_id, setting_name, setting_value)".
 		" SELECT gedcom_id, setting_name,".
@@ -273,9 +267,7 @@ if ($PGV_SCHEMA_VERSION>=12) {
 
 	echo '<p>pgv_user => wt_user ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	try {
 		// "INSERT IGNORE" is needed to allow for PGV users with duplicate emails.  Only the first will be imported.
 		WT_DB::prepare(
@@ -294,9 +286,7 @@ if ($PGV_SCHEMA_VERSION>=12) {
 
 	echo '<p>pgv_user_setting => wt_user_setting ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	WT_DB::prepare(
 		"INSERT INTO `##user_setting` (user_id, setting_name, setting_value)".
 		" SELECT user_id, setting_name,".
@@ -348,9 +338,7 @@ if ($PGV_SCHEMA_VERSION>=12) {
 
 	echo '<p>pgv_user_gedcom_setting => wt_user_gedcom_setting ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	WT_DB::prepare(
 		"INSERT INTO `##user_gedcom_setting` (user_id, gedcom_id, setting_name, setting_value)".
 		" SELECT user_id, gedcom_id, setting_name, setting_value FROM `{$DBNAME}`.`{$TBLPREFIX}user_gedcom_setting`".
@@ -364,9 +352,7 @@ if ($PGV_SCHEMA_VERSION>=12) {
 		$file=$INDEX_DIRECTORY.'/gedcoms.php';
 		echo '<p>', $file, ' => wt_gedcom ...</p>';
 		flush();
-		if (ini_get('output_buffering')) {
-			ob_flush();
-		}
+
 		if (isset($GEDCOMS) && is_array($GEDCOMS)) {
 			foreach ($GEDCOMS as $array) {
 				try {
@@ -393,9 +379,7 @@ if ($PGV_SCHEMA_VERSION>=12) {
 	// Migrate the data from pgv_users into pgv_user/pgv_user_setting/pgv_user_gedcom_setting
 	echo '<p>pgv_users => wt_user ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	try {
 		// "INSERT IGNORE" is needed to allow for PGV users with duplicate emails.  Only the first will be imported.
 		WT_DB::prepare(
@@ -409,9 +393,7 @@ if ($PGV_SCHEMA_VERSION>=12) {
 	}
 	echo '<p>pgv_users => wt_user_setting ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	try {
 		WT_DB::prepare(
 			"INSERT INTO `##user_setting` (user_id, setting_name, setting_value)".
@@ -455,11 +437,6 @@ if ($PGV_SCHEMA_VERSION>=12) {
 			"  WHEN 'russian'    THEN 'ru'".
 			"  ELSE 'en_US'". // PGV supports other languages that webtrees does not (yet)
 			" END".
-			" FROM `{$DBNAME}`.`{$TBLPREFIX}users`".
-			" JOIN `##user` ON (user_name=CONVERT(u_username USING utf8) COLLATE utf8_unicode_ci)".
-			" UNION ALL".
-			" SELECT user_id, 'pwrequested', ".
-			" CASE WHEN u_pwrequested IN ('Y', 'yes') THEN 1 WHEN u_pwrequested IN ('N', 'no') THEN 0 ELSE u_pwrequested END".
 			" FROM `{$DBNAME}`.`{$TBLPREFIX}users`".
 			" JOIN `##user` ON (user_name=CONVERT(u_username USING utf8) COLLATE utf8_unicode_ci)".
 			" UNION ALL".
@@ -536,9 +513,7 @@ if ($PGV_SCHEMA_VERSION>=12) {
 	)->execute();
 	echo '<p>pgv_users => wt_user_gedcom_setting ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	$user_gedcom_settings=
 		WT_DB::prepare(
 			"SELECT user_id, u_gedcomid, u_rootid, u_canedit".
@@ -621,6 +596,10 @@ foreach ($GEDCOMS as $GEDCOM=>$GED_DATA) {
 	if (substr($config, 0, 1)=='.') {
 		$config=$PGV_PATH.'/'.$config;
 	}
+	// Some settings were added in later versions of PGV, and may not be set if the
+	// user has not used the PGV admin pages since upgrading.
+	$NOTE_FACTS_ADD = '';
+	$FULL_SOURCES = '';
 	if (is_readable($config)) {
 		echo '<p>Reading configuration file ', $config, '</p>';
 		require $config;
@@ -654,7 +633,7 @@ foreach ($GEDCOMS as $GEDCOM=>$GED_DATA) {
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'COMMON_NAMES_ADD',             $COMMON_NAMES_ADD));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'COMMON_NAMES_REMOVE',          $COMMON_NAMES_REMOVE));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'COMMON_NAMES_THRESHOLD',       $COMMON_NAMES_THRESHOLD));
-	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'CONTACT_USER_ID',              get_user_id($CONTACT_EMAIL)));
+	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'CONTACT_USER_ID',              User::findByIdentifier($CONTACT_EMAIL)->getUserId()));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'DEFAULT_PEDIGREE_GENERATIONS', $DEFAULT_PEDIGREE_GENERATIONS));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'EXPAND_NOTES',                 $EXPAND_NOTES));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'EXPAND_RELATIVES_EVENTS',      $EXPAND_RELATIVES_EVENTS));
@@ -777,11 +756,10 @@ foreach ($GEDCOMS as $GEDCOM=>$GED_DATA) {
 		break;
 	}
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'THUMBNAIL_WIDTH',              $THUMBNAIL_WIDTH));
-	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'USE_GEONAMES',                 $USE_GEONAMES));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'USE_RELATIONSHIP_PRIVACY',     $USE_RELATIONSHIP_PRIVACY));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'USE_RIN',                      $USE_RIN));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'WATERMARK_THUMB',              $WATERMARK_THUMB));
-	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'WEBMASTER_USER_ID',            get_user_id($WEBMASTER_EMAIL)));
+	@$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'WEBMASTER_USER_ID',           User::findByIdentifier($WEBMASTER_EMAIL)->getUserId()));
 	$stmt_gedcom_setting->execute(array($GED_DATA['id'], 'WORD_WRAPPED_NOTES',           $WORD_WRAPPED_NOTES));
 }
 WT_DB::prepare("DELETE FROM `##gedcom_setting` WHERE setting_name in ('config', 'privacy', 'path', 'pgv_ver', 'imported')")->execute();
@@ -839,9 +817,7 @@ WT_DB::prepare(
 if ($PGV_SCHEMA_VERSION>=13) {
 	echo '<p>pgv_hit_counter => wt_hit_counter ...</p>';
 	flush();
-	if (ini_get('output_buffering')) {
-		ob_flush();
-	}
+
 	WT_DB::prepare(
 		"REPLACE INTO `##hit_counter` (gedcom_id, page_name, page_parameter, page_count)".
 		" SELECT gedcom_id, page_name, page_parameter, page_count FROM `{$DBNAME}`.`{$TBLPREFIX}hit_counter`"
@@ -855,9 +831,7 @@ if ($PGV_SCHEMA_VERSION>=13) {
 		$file=$INDEX_DIRECTORY.'/'.$GEDCOM.'pgv_counters.txt';
 		echo '<p>', $file, ' => wt_hit_counter ...</p>';
 		flush();
-		if (ini_get('output_buffering')) {
-			ob_flush();
-		}
+
 		if (file_exists($file)) {
 			foreach (file($file) as $line) {
 				if (preg_match('/(@([A-Za-z0-9:_-]+)@ )?(\d+)/', $line, $match)) {
@@ -882,7 +856,9 @@ if ($PGV_SCHEMA_VERSION>=13) {
 ////////////////////////////////////////////////////////////////////////////////
 
 if ($PGV_SCHEMA_VERSION>=14) {
-	echo '<p>pgv_ip_address => wt_ip_address ...</p>'; flush(); if (ini_get('output_buffering')) { ob_flush(); }
+	echo '<p>pgv_ip_address => wt_ip_address ...</p>';
+	flush();
+
 	WT_DB::prepare(
 		"INSERT IGNORE INTO `##ip_address` (ip_address, category, comment)".
 		" SELECT ip_address, category, comment FROM `{$DBNAME}`.`{$TBLPREFIX}ip_address`"
@@ -890,7 +866,9 @@ if ($PGV_SCHEMA_VERSION>=14) {
 } else {
 	// Copied from PGV's db_schema_13_14
 	$statement=WT_DB::prepare("REPLACE INTO `##ip_address` (ip_address, category, comment) VALUES (?, ?, ?)");
-	echo '<p>', $INDEX_DIRECTORY, DIRECTORY_SEPARATOR, 'banned.php => wt_ip_address ...</p>'; ob_flush(); flush(); usleep(50000);
+	echo '<p>', $INDEX_DIRECTORY, DIRECTORY_SEPARATOR, 'banned.php => wt_ip_address ...</p>';
+	flush();
+
 	if (is_readable($INDEX_DIRECTORY.'/banned.php')) {
 		@require $INDEX_DIRECTORY.'/banned.php';
 		if (!empty($banned) && is_array($banned)) {
@@ -909,7 +887,9 @@ if ($PGV_SCHEMA_VERSION>=14) {
 			}
 		}
 	}
-	echo '<p>', $INDEX_DIRECTORY, DIRECTORY_SEPARATOR, 'search_engines.php => wt_ip_address ...</p>'; ob_flush(); flush(); usleep(50000);
+	echo '<p>', $INDEX_DIRECTORY, DIRECTORY_SEPARATOR, 'search_engines.php => wt_ip_address ...</p>';
+	flush();
+
 	if (is_readable($INDEX_DIRECTORY.'/search_engines.php')) {
 		@require $INDEX_DIRECTORY.'/search_engines.php';
 		if (!empty($search_engines) && is_array($search_engines)) {
@@ -936,7 +916,9 @@ foreach ($GEDCOMS as $GED_DATA) {
 	WT_Module::setDefaultAccess($GED_DATA['id']);
 }
 
-echo '<p>pgv_site_setting => wt_module_setting ...</p>'; ob_flush(); flush(); usleep(50000);
+echo '<p>pgv_site_setting => wt_module_setting ...</p>';
+flush();
+
 WT_DB::prepare(
 	"REPLACE INTO `##module_setting` (module_name, setting_name, setting_value)".
 	" SELECT 'googlemap', site_setting_name, site_setting_value FROM `{$DBNAME}`.`{$TBLPREFIX}site_setting`".
@@ -950,7 +932,9 @@ WT_DB::prepare(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-echo '<p>pgv_favorites => wt_favorite ...</p>'; ob_flush(); flush(); usleep(50000);
+echo '<p>pgv_favorites => wt_favorite ...</p>';
+flush();
+
 try {
 	WT_DB::prepare(
 		"REPLACE INTO `##favorite` (favorite_id, user_id, gedcom_id, xref, favorite_type, url, title, note)".
@@ -965,7 +949,9 @@ try {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-echo '<p>pgv_news => wt_news ...</p>'; ob_flush(); flush(); usleep(50000);
+echo '<p>pgv_news => wt_news ...</p>';
+flush();
+
 try {
 	WT_DB::prepare(
 		"REPLACE INTO `##news` (news_id, user_id, gedcom_id, subject, body, updated)".
@@ -980,7 +966,9 @@ try {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-echo '<p>pgv_nextid => wt_next_id ...</p>'; ob_flush(); flush(); usleep(50000);
+echo '<p>pgv_nextid => wt_next_id ...</p>';
+flush();
+
 WT_DB::prepare(
 	"REPLACE INTO `##next_id` (gedcom_id, record_type, next_id)".
 	" SELECT ni_gedfile, ni_type, ni_id".
@@ -991,7 +979,9 @@ WT_DB::prepare(
 
 ////////////////////////////////////////////////////////////////////////////////
 
-echo '<p>pgv_messages => wt_message ...</p>'; ob_flush(); flush(); usleep(50000);
+echo '<p>pgv_messages => wt_message ...</p>';
+flush();
+
 WT_DB::prepare(
 	"REPLACE INTO `##message` (message_id, sender, ip_address, user_id, subject, body, created)".
 	" SELECT m_id, m_from, '127.0.0.1', user_id, m_subject, m_body, str_to_date(m_created,'%a, %d %M %Y %H:%i:%s')".
@@ -1002,7 +992,9 @@ WT_DB::prepare(
 ////////////////////////////////////////////////////////////////////////////////
 
 try {
-	echo '<p>pgv_placelocation => wt_placelocation ...</p>'; ob_flush(); flush(); usleep(50000);
+	echo '<p>pgv_placelocation => wt_placelocation ...</p>';
+	flush();
+
 	WT_DB::prepare(
 		"REPLACE INTO `##placelocation` (pl_id, pl_parent_id, pl_level, pl_place, pl_long, pl_lati, pl_zoom, pl_icon)".
 		" SELECT pl_id, pl_parent_id, pl_level, pl_place, pl_long, pl_lati, pl_zoom, pl_icon FROM `{$DBNAME}`.`{$TBLPREFIX}placelocation`"
@@ -1013,7 +1005,8 @@ try {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-echo '<p>Genealogy records ...</p>'; ob_flush(); flush(); usleep(50000);
+echo '<p>Genealogy records ...</p>';
+flush();
 
 WT_DB::prepare(
 	"INSERT INTO `##gedcom_chunk` (gedcom_id, chunk_data, imported)" .

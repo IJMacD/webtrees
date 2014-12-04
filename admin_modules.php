@@ -2,7 +2,7 @@
 // Module Administration User Interface.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,15 +16,17 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'admin_modules.php');
 require 'includes/session.php';
 require WT_ROOT.'includes/functions/functions_edit.php';
 
-$controller=new WT_Controller_Page();
+$controller = new WT_Controller_Page();
 $controller
-	->requireAdminLogin()
+	->restrictAccess(Auth::isAdmin())
 	->setPageTitle(WT_I18N::translate('Module administration'));
 
 $modules = WT_Module::getInstalledModules('disabled');
@@ -45,7 +47,9 @@ case 'update_mods':
 			}
 		}
 	}
-	break;
+
+	header('Location: ' . WT_SERVER_NAME . WT_SCRIPT_PATH . 'admin_modules.php');
+	exit;
 }
 
 switch (WT_Filter::get('action')) {
@@ -67,8 +71,9 @@ case 'delete_module':
 	WT_DB::prepare("DELETE FROM `##module_setting` WHERE module_name=?")->execute(array($module_name));
 	WT_DB::prepare("DELETE FROM `##module_privacy` WHERE module_name=?")->execute(array($module_name));
 	WT_DB::prepare("DELETE FROM `##module`         WHERE module_name=?")->execute(array($module_name));
-	unset($modules[$module_name]);
-	break;
+
+	header('Location: ' . WT_SERVER_NAME . WT_SCRIPT_PATH . 'admin_modules.php');
+	exit;
 }
 
 $controller
@@ -82,27 +87,27 @@ $controller
 				});
 	  }
 
-		var oTable = jQuery("#installed_table").dataTable( {
-			"sDom": \'<"H"pf<"dt-clear">irl>t<"F"pl>\',
+		jQuery("#installed_table").dataTable( {
+			dom: \'<"H"pf<"dt-clear">irl>t<"F"pl>\',
 			'.WT_I18N::datatablesI18N().',
-			"bJQueryUI": true,
-			"bAutoWidth":false,
-			"aaSorting": [[ 1, "asc" ]],
-			"iDisplayLength": 10,
-			"sPaginationType": "full_numbers",
-			"bStateSave": true,
-			"iCookieDuration": 180,
-			"aoColumns" : [
-				{ bSortable: false, sClass: "center" },
+			jQueryUI: true,
+			autoWidth: false,
+			sorting: [[ 1, "asc" ]],
+			pageLength: 10,
+			pagingType: "full_numbers",
+			stateSave: true,
+			stateDuration: 180,
+			columns : [
+				{ sortable: false, class: "center" },
 				null,
 				null,
-				{ sClass: "center" },
-				{ sClass: "center" },
-				{ sClass: "center" },
-				{ sClass: "center" },
-				{ sClass: "center", bVisible: false }, // The WT_Module system does not yet include charts
-				{ sClass: "center" },
-				{ sClass: "center", bVisible: false } // The WT_Module system does not yet include themes
+				{ class: "center" },
+				{ class: "center" },
+				{ class: "center" },
+				{ class: "center" },
+				{ class: "center", visible: false }, // The WT_Module system does not yet include charts
+				{ class: "center" },
+				{ class: "center", visible: false } // The WT_Module system does not yet include themes
 			]
 		});
 	');

@@ -2,10 +2,10 @@
 // Administrative User Interface.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // Modifications Copyright (c) 2010 Greg Roach
 //
@@ -21,14 +21,16 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+
+use WT\Auth;
 
 define('WT_SCRIPT_NAME', 'admin_users_bulk.php');
 require './includes/session.php';
 
-$controller=new WT_Controller_Page();
+$controller = new WT_Controller_Page();
 $controller
-	->requireAdminLogin()
+	->restrictAccess(Auth::isAdmin())
 	->setPageTitle(WT_I18N::translate('Send broadcast messages'))
 	->pageHeader();
 
@@ -36,17 +38,17 @@ $controller
 <div id="users_bulk">
 	<p>
 		<a href="#" onclick="message('all', 'messaging2', ''); return false;">
-			<?php echo WT_I18N::translate('Send message to all users'); ?>
+			<?php echo WT_I18N::translate('Send a message to all users'); ?>
 		</a>
 	</p>
 	<p>
 		<a href="#" onclick="message('never_logged', 'messaging2', ''); return false;">
-			<?php echo WT_I18N::translate('Send message to users who have never logged in'); ?>
+			<?php echo WT_I18N::translate('Send a message to users who have never logged in'); ?>
 		</a>
 	</p>
 	<p>
 		<a href="#" onclick="message('last_6mo', 'messaging2', ''); return false;">
-			<?php echo WT_I18N::translate('Send message to users who have not logged in for 6 months'); ?>
+			<?php echo WT_I18N::translate('Send a message to users who have not logged in for 6 months'); ?>
 		</a>
 	</p>
 </div>

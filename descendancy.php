@@ -2,10 +2,10 @@
 // Displays a descendancy tree.
 //
 // webtrees: Web based Family History software
-// Copyright (C) 2013 webtrees development team.
+// Copyright (C) 2014 webtrees development team.
 //
 // Derived from PhpGedView
-// Copyright (C) 2002 to 2009 PGV Development Team.  All rights reserved.
+// Copyright (C) 2002 to 2009 PGV Development Team.
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,18 +19,18 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
-// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+// Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 
 define('WT_SCRIPT_NAME', 'descendancy.php');
 require './includes/session.php';
 require_once WT_ROOT.'includes/functions/functions_edit.php';
 require_once WT_ROOT.'includes/functions/functions_print_lists.php';
 
-$controller=new WT_Controller_Descendancy();
+$controller = new WT_Controller_Descendancy();
 $controller
 	->pageHeader()
-	->addExternalJavascript(WT_STATIC_URL.'js/autocomplete.js')
-	->addInlineJavascript('var pastefield; function paste_id(value) { pastefield.value=value; }'); // For the "find indi" link
+	->addExternalJavascript(WT_STATIC_URL . 'js/autocomplete.js')
+	->addInlineJavascript('autocomplete();');
 
 ?>
 <div id="descendancy-page"><h2><?php echo $controller->getPageTitle(); ?></h2>
@@ -43,7 +43,7 @@ $controller
 					<?php	echo WT_I18N::translate('Individual'); ?>
 				</td>
 				<td class="optionbox">
-					<input class="pedigree_form" type="text" id="rootid" name="rootid" size="3" value="<?php echo $controller->rootid; ?>">
+					<input class="pedigree_form" data-autocomplete-type="INDI" type="text" id="rootid" name="rootid" size="3" value="<?php echo $controller->root->getXref(); ?>">
 					<?php echo print_findindi_link('rootid'); ?>
 				</td>
 				<td class="descriptionbox">
@@ -97,26 +97,22 @@ if ($controller->error_message) {
 	switch ($controller->chart_style) {
 	case 0: // List
 		echo '<ul style="list-style: none; display: block;" id="descendancy_chart">';
-		$controller->print_child_descendancy($controller->root, $controller->generations);
+		$controller->printChildDescendancy($controller->root, $controller->generations);
 		echo '</ul>';
 		break;
 	case 1: // Booklet
-		echo '<div id="descendancy_chart">';
 		$show_cousins = true;
-		$controller->print_child_family($controller->root, $controller->generations);
+		echo '<div id="descendancy_chart">';
+		$controller->printChildFamily($controller->root, $controller->generations);
 		echo '</div>';
 		break;
 	case 2: // Individual list
-		$descendants = $controller->indi_desc($controller->root, $controller->generations, array());
-		echo '<div id="descendancy-list">';
-		echo format_indi_table($descendants, WT_I18N::translate('Descendants of %s', $controller->name));
-		echo '</div>';
+		$descendants = $controller->individualDescendancy($controller->root, $controller->generations, array());
+		echo '<div id="descendancy-list">', format_indi_table($descendants), '</div>';
 		break;
 	case 3: // Family list
-		$descendants = $controller->fam_desc($controller->root, $controller->generations, array());
-		echo '<div id="descendancy-list">';
-		echo format_fam_table($descendants, WT_I18N::translate('Descendants of %s', $controller->name));
-		echo '</div>';
+		$descendants = $controller->familyDescendancy($controller->root, $controller->generations, array());
+		echo '<div id="descendancy-list">', format_fam_table($descendants), '</div>';
 		break;
 	}
 }
