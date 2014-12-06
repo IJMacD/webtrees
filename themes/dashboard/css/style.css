@@ -16,14 +16,14 @@
 		width: 33.3333333333333333%;
 	}
 }
-#user_welcome63 td,
-#gedcom_block20 td {
+[id^=user_welcome] td,
+[id^=gedcom_block] td {
 	display: inline-block;
 	min-width: 100px;
 	width: 33.33333333333333333%;
 }
-#user_welcome63 td a,
-#gedcom_block20 td a {
+[id^=user_welcome] td a,
+[id^=gedcom_block] td a {
 	/* .btn - bootstrap */
 	padding: 6px 12px;
 	margin-bottom: 0;
@@ -57,12 +57,12 @@
 	/* extra */
 	height: 100px;
 }
-#user_welcome63 td a:hover,
-#user_welcome63 td a:active,
-#user_welcome63 td a:focus,
-#gedcom_block20 td a:hover,
-#gedcom_block20 td a:active,
-#gedcom_block20 td a:focus {
+[id^=user_welcome] td a:hover,
+[id^=user_welcome] td a:active,
+[id^=user_welcome] td a:focus,
+[id^=gedcom_block] td a:hover,
+[id^=gedcom_block] td a:active,
+[id^=gedcom_block] td a:focus {
 	/* a:active,
 		a:hover - bootstrap */
 	outline: 0;
