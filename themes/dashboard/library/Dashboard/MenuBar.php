@@ -131,6 +131,8 @@ class Dashboard_MenuBar extends WT_MenuBar {
         case "menu-clippings":
           $menu->iconclass = "glyphicon glyphicon-shopping-cart";
           break;
+        default:
+          $menu->iconclass = "fa fa-cog";
         }
 
         $menus[] = $menu;
