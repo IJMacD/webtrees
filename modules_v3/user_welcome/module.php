@@ -44,8 +44,8 @@ class user_welcome_WT_Module extends WT_Module implements WT_Module_Block {
 			$content .= '<td><a href="edituser.php"><i class="icon-mypage"></i><br>'.WT_I18N::translate('My account').'</a></td>';
 		}
 		if (WT_USER_GEDCOM_ID) {
-			$content .= '<td><a href="pedigree.php?rootid='.WT_USER_GEDCOM_ID.'&amp;ged='.WT_GEDURL.'" class="btn btn-primary"><i class="icon-pedigree"></i><br>'.WT_I18N::translate('My pedigree').'</a></td>';
-			$content .= '<td><a href="individual.php?pid='.WT_USER_GEDCOM_ID.'&amp;ged='.WT_GEDURL.'" class="btn btn-primary"><i class="icon-indis"></i><br>'.WT_I18N::translate('My individual record').'</a></td>';
+			$content .= '<td><a href="pedigree.php?rootid='.WT_USER_GEDCOM_ID.'&amp;ged='.WT_GEDURL.'"><i class="icon-pedigree"></i><br>'.WT_I18N::translate('My pedigree').'</a></td>';
+			$content .= '<td><a href="individual.php?pid='.WT_USER_GEDCOM_ID.'&amp;ged='.WT_GEDURL.'"><i class="icon-indis"></i><br>'.WT_I18N::translate('My individual record').'</a></td>';
 		}
 		$content .= '</tr></table>';
 

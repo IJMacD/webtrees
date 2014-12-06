@@ -38,7 +38,6 @@ class WT_MenuBar {
 					'index.php?ctype=gedcom&amp;ged='.$tree->tree_name_url,
 					'menu-tree-'.$tree->tree_id // Cannot use name - it must be a CSS identifier
 				);
-				$submenu->iconclass = "glyphicon glyphicon-tree-deciduous";
 				$menu->addSubmenu($submenu);
 			}
 		}
@@ -60,7 +59,6 @@ class WT_MenuBar {
 
 		//-- main menu
 		$menu = new WT_Menu(WT_I18N::translate('My page'), 'index.php?ctype=user&amp;ged='.WT_GEDURL, 'menu-mymenu');
-		$menu->iconclass = "fa fa-user";
 
 		//-- mypage submenu
 		$submenu = new WT_Menu(WT_I18N::translate('My page'), 'index.php?ctype=user&amp;ged='.WT_GEDURL, 'menu-mypage');
@@ -85,7 +83,6 @@ class WT_MenuBar {
 		if (WT_USER_GEDCOM_ADMIN) {
 			//-- admin submenu
 			$submenu = new WT_Menu(WT_I18N::translate('Administration'), 'admin.php', 'menu-admin');
-			$submenu->iconclass = "fa fa-cog";
 			$menu->addSubmenu($submenu);
 		}
 		return $menu;
@@ -104,7 +101,6 @@ class WT_MenuBar {
 		$indi_xref=$controller->getSignificantIndividual()->getXref();
 
 		$menu = new WT_Menu(WT_I18N::translate('Charts'), 'pedigree.php?rootid='.$indi_xref.'&amp;ged='.WT_GEDURL, 'menu-chart');
-		$menu->iconclass = "fa fa-bar-chart-o";
 
 		// Build a sortable list of submenu items and then sort it in localized name order
 		$menuList = array(
@@ -329,7 +325,6 @@ class WT_MenuBar {
 		}
 		//-- main calendar menu item
 		$menu = new WT_Menu(WT_I18N::translate('Calendar'), 'calendar.php?ged='.WT_GEDURL, 'menu-calendar');
-		$menu->iconclass = "fa fa-calendar";
 		//-- viewday sub menu
 		$submenu = new WT_Menu(WT_I18N::translate('Day'), 'calendar.php?ged='.WT_GEDURL, 'menu-calendar-day');
 		$menu->addSubmenu($submenu);
@@ -356,7 +351,6 @@ class WT_MenuBar {
 		}
 
 		$menu = new WT_Menu(WT_I18N::translate('Reports'), 'reportengine.php?ged='.WT_GEDURL, 'menu-report');
-		$menu->iconclass = "fa fa-file-text-o";
 
 		foreach ($active_reports as $report) {
 			foreach ($report->getReportMenus() as $submenu) {
@@ -378,7 +372,6 @@ class WT_MenuBar {
 		}
 		//-- main search menu item
 		$menu = new WT_Menu(WT_I18N::translate('Search'), 'search.php?ged='.WT_GEDURL, 'menu-search');
-		$menu->iconclass = "fa fa-search";
 		//-- search_general sub menu
 		$submenu = new WT_Menu(WT_I18N::translate('General search'), 'search.php?ged='.WT_GEDURL, 'menu-search-general');
 		$menu->addSubmenu($submenu);
@@ -424,7 +417,6 @@ class WT_MenuBar {
 				if (WT_THEME_DIR == 'themes/'.$themedir.'/') {$submenu->addClass('','','theme-active');}
 				$menu->addSubmenu($submenu);
 			}
-			$menu->helpermenu = true;
 			return $menu;
 		} else {
 			return null;
@@ -447,7 +439,6 @@ class WT_MenuBar {
 				if (WT_LOCALE == $lang) {$submenu->addClass('','','lang-active');}
 				$menu->addSubmenu($submenu);
 			}
-			$menu->helpermenu = true;
 			if (count($menu->submenus)>1) {
 				return $menu;
 			} else {
@@ -485,7 +476,6 @@ class WT_MenuBar {
 		// Sort $favorites alphabetically?
 
 		$menu=new WT_Menu(WT_I18N::translate('Favorites'), '#', 'menu-favorites');
-			$menu->helpermenu = true;
 
 		foreach ($favorites as $favorite) {
 			switch($favorite['type']) {
@@ -514,10 +504,6 @@ class WT_MenuBar {
 				$menu->addSubmenu($submenu);
 			}
 		}
-		if (count($menu->submenus)>1) {
-			return $menu;
-		} else {
-			return null;
-		}
+		return $menu;
 	}
 }

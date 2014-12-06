@@ -165,8 +165,8 @@ default:
 	}
 
 	echo '</div>';
-	echo '<div id="login-box" class="col-sm-offset-3 col-sm-6">
-		<form id="login-form" name="login-form" class="form-horizontal" method="post" action="', WT_LOGIN_URL, '" onsubmit="d=new Date(); this.timediff.value=d.getTimezoneOffset()*60;">
+	echo '<div id="login-box">
+		<form id="login-form" name="login-form" method="post" action="', WT_LOGIN_URL, '" onsubmit="d=new Date(); this.timediff.value=d.getTimezoneOffset()*60;">
 		<input type="hidden" name="action" value="login">
 		<input type="hidden" name="url" value="', WT_Filter::escapeHtml($url), '">
 		<input type="hidden" name="timediff" value="0">';
@@ -178,16 +178,13 @@ default:
 			'<input type="text" id="username" name="username" value="', WT_Filter::escapeHtml($username), '" class="formField" autofocus>
 			</label>
 		</div>
-		<div class="form-group">
-			<label for="password" class="col-sm-2 control-label">', WT_I18N::translate('Password'),'</label>',
-			'<div class="col-sm-10">
-				<input type="password" id="password" name="password" class="form-control">
-			</div>
+		<div>
+			<label for="password">', WT_I18N::translate('Password'),
+				'<input type="password" id="password" name="password" class="formField">
+			</label>
 		</div>
-		<div class="form-group">
-			<div class="col-sm-offset-2 col-sm-10">
-				<input type="submit" value="', WT_I18N::translate('Login'), '">
-			</div>
+		<div>
+			<input type="submit" value="', WT_I18N::translate('Login'), '">
 		</div>
 		';
 		// Emails are sent from a TREE, not from a SITE.  Therefore if there is no

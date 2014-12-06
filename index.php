@@ -94,7 +94,7 @@ if ($ctype === 'user') {
 }
 if ($blocks['main']) {
 	if ($blocks['side']) {
-		echo '<div id="index_main_blocks" class="col-md-8">';
+		echo '<div id="index_main_blocks">';
 	} else {
 		echo '<div id="index_full_blocks">';
 	}
@@ -116,7 +116,7 @@ if ($blocks['main']) {
 }
 if ($blocks['side']) {
 	if ($blocks['main']) {
-		echo '<div id="index_small_blocks" class="col-md-4">';
+		echo '<div id="index_small_blocks">';
 	} else {
 		echo '<div id="index_full_blocks">';
 	}

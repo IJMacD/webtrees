@@ -48,6 +48,8 @@ class gedcom_block_WT_Module extends WT_Module implements WT_Module_Block {
 		if (WT_Site::getPreference('USE_REGISTRATION_MODULE') && !Auth::check()) {
 			$content .= '<td><a href="'.WT_LOGIN_URL.'?action=register"><i class="icon-user_add"></i><br>'.WT_I18N::translate('Request new user account').'</a></td>';
 		}
+		$content .= "</tr>";
+		$content .= "</table>";
 
 		if ($template) {
 			require WT_THEME_DIR.'templates/block_main_temp.php';

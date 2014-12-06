@@ -83,7 +83,7 @@ class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
 			$content .= '<div>'./* I18N: %s is a date */ WT_I18N::translate('This family tree was last updated on %s.', strip_tags($stats->gedcomUpdated())).'</div>';
 		}
 
-		$content .= '<table><tr><td class="width20"><table class="facts_table table table-striped">';
+		$content .= '<table><tr><td class="width20"><table class="facts_table">';
 		if ($stat_indi) {
 			$content.='<tr><td class="facts_label">'.WT_I18N::translate('Individuals').'</td><td class="facts_value stats_value"><a href="'."indilist.php?surname_sublist=no&amp;ged=".WT_GEDURL.'">'.$stats->totalIndividuals().'</a></td></tr>';
 			$content.='<tr><td class="facts_label">'.WT_I18N::translate('Males').'</td><td class="facts_value stats_value">'.$stats->totalSexMales().'<br>'.$stats->totalSexMalesPercentage().'</td></tr>';
@@ -117,7 +117,7 @@ class gedcom_stats_WT_Module extends WT_Module implements WT_Module_Block {
 			$content .= '</td></tr>';
 		}
 		if (!$block) {
-			$content .= '</table></td><td><table class="facts_table table table-striped">';
+			$content .= '</table></td><td><table class="facts_table">';
 		}
 		if ($stat_first_birth) {
 			$content .= '<tr><td class="facts_label">'.WT_I18N::translate('Earliest birth year').'</td><td class="facts_value stats_value">'.$stats->firstBirthYear().'</td>';

@@ -814,7 +814,7 @@ function format_fact_date(WT_Fact $event, WT_GedcomRecord $record, $anchor=false
 	// print gedcom ages
 	foreach (array(WT_Gedcom_Tag::getLabel('AGE')=>$fact_age, WT_Gedcom_Tag::getLabel('HUSB')=>$husb_age, WT_Gedcom_Tag::getLabel('WIFE')=>$wife_age) as $label=>$age) {
 		if ($age!='') {
-			$html.=' <span class="label label-info">'.$label.':</span> <span class="age">'.get_age_at_event($age, false).'</span>';
+			$html.=' <span class="label">'.$label.':</span> <span class="age">'.get_age_at_event($age, false).'</span>';
 		}
 	}
 	return $html;
@@ -865,7 +865,6 @@ function format_fact_place(WT_Fact $event, $anchor=false, $sub_records=false, $l
 			if ($cts > 0) {
 				$map_long = $match[1];
 				$html .= ' <span class="label">' . WT_Gedcom_Tag::getLabel('LONG') . ': </span>' . $map_long;
-				
 			}
 			if ($map_lati && $map_long) {
 				$map_lati = trim(strtr($map_lati, "NSEW,�", " - -. ")); // S5,6789 ==> -5.6789

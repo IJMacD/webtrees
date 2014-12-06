@@ -155,7 +155,7 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 		echo '">';
 
 		echo '<div class="name1">';
-		echo '<dl><dt class="label label-info">', WT_I18N::translate('Name'), '</dt>';
+		echo '<dl><dt class="label">', WT_I18N::translate('Name'), '</dt>';
 		$dummy->setPrimaryName(0);
 		echo '<dd class="field">', $dummy->getFullName();
 		if ($this->name_count == 1) {
@@ -178,7 +178,7 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 			echo '<div>';
 				$fact = $nmatch[$i][1];
 				if ($fact!='SOUR' && $fact!='NOTE' && $fact!='SPFX') {
-					echo '<dl><dt class="label label-info">', WT_Gedcom_Tag::getLabel($fact, $this->record), '</dt>';
+					echo '<dl><dt class="label">', WT_Gedcom_Tag::getLabel($fact, $this->record), '</dt>';
 					echo '<dd class="field">'; // Before using dir="auto" on this field, note that Gecko treats this as an inline element but WebKit treats it as a block element
 					if (isset($nmatch[$i][2])) {
 							$name = WT_Filter::escapeHtml($nmatch[$i][2]);
@@ -419,6 +419,6 @@ class WT_Controller_Individual extends WT_Controller_GedcomRecord {
 			return '<div id="sidebar"><div id="sidebarAccordion">' . $html . '</div></div>';
 		} else {
 			return '';
-
+		}
 	}
 }

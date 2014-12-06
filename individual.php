@@ -208,7 +208,7 @@ foreach ($controller->tabs as $tab) {
 	echo $tab->getPreLoadContent();
 }
 echo '<div id="tabs">';
-echo '<ul class="nav nav-tabs">';
+echo '<ul>';
 foreach ($controller->tabs as $tab) {
 	if ($tab->isGrayedOut()) {
 		$greyed_out='rela';
