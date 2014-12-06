@@ -99,7 +99,7 @@ global $WT_IMAGES;
 				if (Auth::check()) {
 				?>
 					<li class="light-brand-green">
-						<a data-toggle="dropdown" href="index.html#" class="dropdown-toggle">
+						<a data-toggle="dropdown" href="#" class="dropdown-toggle">
 							<img class="nav-user-photo" src="//www.gravatar.com/avatar/<?php echo md5(strtolower(Auth::user()->getEmail())) ?>" alt="Bugbug's Photo">
 							<span class="user-info">
 								<small>Welcome,</small>
@@ -120,10 +120,25 @@ global $WT_IMAGES;
 
 							<li>
 								<a href="edituser.php">
-									<i class="fa fa-cog"></i>
-									Settings
+									<i class="fa fa-edit"></i>
+									Account Settings
 								</a>
 							</li>
+
+							<?php
+							if(Auth::isAdmin()):
+							?>
+
+							<li>
+								<a href="admin.php">
+									<i class="fa fa-cog"></i>
+									Administration
+								</a>
+							</li>
+
+							<?php
+							endif;
+							?>
 
 							<li class="divider"></li>
 

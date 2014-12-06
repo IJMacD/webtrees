@@ -1,3 +1,6 @@
+.btn-scroll-up {
+	position: fixed;
+}
 #index_main_blocks,
 #index_small_blocks {
 	position: relative;
