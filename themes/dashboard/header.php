@@ -20,11 +20,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+use WT\Auth;
+require_once "library/Dashboard/Menu.php";
+require_once "library/Dashboard/MenuBar.php";
 
 if (!defined('WT_WEBTREES')) {
 	header('HTTP/1.0 403 Forbidden');
 	exit;
 }
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
 global $WT_IMAGES;
 ?>
@@ -86,26 +91,26 @@ global $WT_IMAGES;
 			<div class="navbar-header pull-right" role="navigation">
 				<ul class="nav ace-nav">
 
-					<?php echo WT_MenuBar::getFavoritesMenu(); ?>
-					<?php echo WT_MenuBar::getThemeMenu(); ?>
-					<?php echo WT_MenuBar::getLanguageMenu(); ?>
+					<?php echo Dashboard_MenuBar::getFavoritesMenu(); ?>
+					<?php echo Dashboard_MenuBar::getThemeMenu(); ?>
+					<?php echo Dashboard_MenuBar::getLanguageMenu(); ?>
 
 				<?php
-				if (WT_USER_ID) {
+				if (Auth::check()) {
 				?>
 					<li class="light-brand-green">
 						<a data-toggle="dropdown" href="index.html#" class="dropdown-toggle">
-							<img class="nav-user-photo" src="//www.gravatar.com/avatar/<?php echo md5(strtolower(getUserEmail(WT_USER_ID))); ?>" alt="Bugbug's Photo">
+							<img class="nav-user-photo" src="//www.gravatar.com/avatar/<?php echo md5(strtolower(Auth::user()->getEmail())) ?>" alt="Bugbug's Photo">
 							<span class="user-info">
 								<small>Welcome,</small>
-								<?php echo getUserFullName(WT_USER_ID); ?>
+								<?php echo Auth::user()->getRealName(); ?>
 							</span>
 
 							<i class="fa fa-caret-down"></i>
 						</a>
 
 						<ul class="user-menu pull-right dropdown-menu dropdown-green dropdown-caret dropdown-close">
-							
+
 							<li>
 								<a href="index.php?ctype=user">
 									<i class="fa fa-user"></i>
@@ -123,7 +128,8 @@ global $WT_IMAGES;
 							<li class="divider"></li>
 
 							<li>
-								<a href="index.php?logout=1">
+								<?php /* echo logout_link(); */ ?>
+								<a href="logout.php">
 									<i class="fa fa-power-off"></i>
 									Logout
 								</a>
@@ -132,13 +138,14 @@ global $WT_IMAGES;
 					</li>
 				<?php
 				} else {
-					echo '<li class="light-brand-green">';
-					echo login_link();
-						// <a href="login.php?url=index.php">
-						// 	<i class="fa fa-power-on"></i>
-						// 	Login
-						// </a>
-					echo '</li>';
+				?>
+					<li class="light-brand-green">
+						<a href="<?php echo WT_LOGIN_URL . '?url='.rawurlencode(get_query_url()); ?>">
+							<i class="fa fa-lock"></i>
+							Login
+						</a>
+					</li>
+				<?php
 				}
 				?>
 				</ul><!-- /.ace-nav -->
@@ -153,7 +160,7 @@ global $WT_IMAGES;
 				<span class="menu-text"></span>
 			</a>
 
-			<div class="sidebar" id="sidebar">
+			<div class="sidebar">
 
 				<div class="sidebar-shortcuts" id="sidebar-shortcuts">
 					<div class="sidebar-shortcuts-large" id="sidebar-shortcuts-large">
@@ -186,14 +193,14 @@ global $WT_IMAGES;
 				</div><!-- #sidebar-shortcuts -->
 
 				<ul class="nav nav-list">
-					<?php echo WT_MenuBar::getGedcomMenu();   ?>
-					<?php echo WT_MenuBar::getMyPageMenu();   ?>
-					<?php echo WT_MenuBar::getChartsMenu();   ?>
-					<?php echo WT_MenuBar::getListsMenu();    ?>
-					<?php echo WT_MenuBar::getCalendarMenu(); ?>
-					<?php echo WT_MenuBar::getReportsMenu();  ?>
-					<?php echo WT_MenuBar::getSearchMenu();   ?>
-					<?php echo implode('', WT_MenuBar::getModuleMenus()); ?>
+					<?php echo Dashboard_MenuBar::getGedcomMenu();   ?>
+					<?php echo Dashboard_MenuBar::getMyPageMenu();   ?>
+					<?php echo Dashboard_MenuBar::getChartsMenu();   ?>
+					<?php echo Dashboard_MenuBar::getListsMenu();    ?>
+					<?php echo Dashboard_MenuBar::getCalendarMenu(); ?>
+					<?php echo Dashboard_MenuBar::getReportsMenu();  ?>
+					<?php echo Dashboard_MenuBar::getSearchMenu();   ?>
+					<?php echo implode('', Dashboard_MenuBar::getModuleMenus()); ?>
 				</ul><!-- /.nav-list -->
 
 				<div class="sidebar-collapse" id="sidebar-collapse">
@@ -205,7 +212,7 @@ global $WT_IMAGES;
 			<div class="main-content">
 
 				<div class="breadcrumbs" id="breadcrumbs">
-<!-- 
+<!--
 					<ul class="breadcrumb">
 						<li>
 							<i class="fa fa-home home-icon"></i>

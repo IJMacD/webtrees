@@ -33,7 +33,7 @@ if (!defined('WT_WEBTREES')) {
 }
 
 ?>
-<div id="<?php echo $id; ?>" class="widget-box transparent">
+<div id="<?php echo $id; ?>" class="widget-box transparent <?php echo $class; ?>">
 	<div class="widget-header widget-header-flat">
 		<h4 class="lighter">
 			<!-- <i class="fa fa-star orange"></i> -->
