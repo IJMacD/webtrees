@@ -18,8 +18,8 @@ ace.handle_side_menu = function($) {
         return false
     });
     $("#sidebar-collapse").on(ace.click_event, function() {
-        var c = $("#sidebar").hasClass("menu-min"),
-            e = $("#sidebar"),
+        var c = $(".sidebar").hasClass("menu-min"),
+            e = $(".sidebar"),
             d = $("#sidebar-collapse").find('[class*="fa-"]'),
             b = d.data("icon1"),
             a = d.data("icon2");
