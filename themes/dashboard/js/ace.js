@@ -13,13 +13,13 @@ jQuery(function(a) {
 });
 ace.handle_side_menu = function($) {
     $("#menu-toggler").on(ace.click_event, function() {
-        $("#sidebar").toggleClass("display");
+        $("#ace-sidebar").toggleClass("display");
         $(this).toggleClass("display");
         return false
     });
     $("#sidebar-collapse").on(ace.click_event, function() {
-        var c = $(".sidebar").hasClass("menu-min"),
-            e = $(".sidebar"),
+        var c = $("#ace-sidebar").hasClass("menu-min"),
+            e = $("#ace-sidebar"),
             d = $("#sidebar-collapse").find('[class*="fa-"]'),
             b = d.data("icon1"),
             a = d.data("icon2");

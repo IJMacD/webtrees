@@ -60,7 +60,10 @@ class DashboardTheme extends Webtrees\WebtreesTheme {
 	*/
 	public function stylesheets() {
 		try {
-			$css_files   = parent::stylesheets();
+			//$css_files   = parent::stylesheets();
+			$css_files = [];
+			// assetUrl from parent (Webtrees) theme
+			$css_files[] = $this->assetUrl() . "style.css";
 			// Put a version number in the URL, to prevent browsers from caching old versions.
 			$css_files[] = WT_BASE_URL . 'themes/dashboard/css/bootstrap.min.css';
 			$css_files[] = WT_BASE_URL . 'themes/dashboard/css/font-awesome.min.css';
